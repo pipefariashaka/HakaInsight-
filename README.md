@@ -1,6 +1,6 @@
-# Code Architecture Analyzer
+# Haka Insight
 
-A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source code and generate interactive architecture diagrams.
+A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source code and generate interactive architecture diagrams with deep insights and quality metrics.
 
 ## Features
 
@@ -42,9 +42,9 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 
 ## Commands
 
-- `Open Code Architecture Analyzer` - Open the analysis panel
-- `Analyze Architecture` - Analyze the current file (right-click menu)
-- `Clear Architecture Diagram` - Clear all stored diagrams and cache
+- `Open Haka Insight` - Open the analysis panel
+- `Analyze with Haka Insight` - Analyze the current file (right-click menu)
+- `Clear Haka Insight Diagram` - Clear all stored diagrams and cache
 - `Clear Cache` - Clear cached analyses to free up storage
 
 ## Requirements

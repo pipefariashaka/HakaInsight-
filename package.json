@@ -1,7 +1,7 @@
 {
   "name": "code-architect-hakalab",
-  "displayName": "Haka-Analyzer",
-  "description": "Gemini 3-based code architect",
+  "displayName": "Haka Insight",
+  "description": "AI-powered code architecture analyzer with deep insights and quality metrics",
   "version": "0.0.1",
   "publisher": "hakalab",
   "engines": {
@@ -15,15 +15,15 @@
     "commands": [
       {
         "command": "code-architect-hakalab.openSidebar",
-        "title": "Open Code Architecture Analyzer"
+        "title": "Open Haka Insight"
       },
       {
         "command": "code-architect-hakalab.analyzeArchitecture",
-        "title": "Analyze Architecture"
+        "title": "Analyze with Haka Insight"
       },
       {
         "command": "code-architect-hakalab.clearDiagram",
-        "title": "Clear Architecture Diagram"
+        "title": "Clear Haka Insight Diagram"
       }
     ],
     "menus": {
@@ -46,7 +46,7 @@
       "activitybar": [
         {
           "id": "haka-analyzer-sidebar",
-          "title": "Code Architecture Analyzer",
+          "title": "Haka Insight",
           "icon": "media/icon.svg"
         }
       ]

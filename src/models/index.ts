@@ -1,5 +1,5 @@
 /**
- * Core data models and interfaces for Code Architecture Analyzer
+ * Core data models and interfaces for Haka Insight
  */
 
 /**

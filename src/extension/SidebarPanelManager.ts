@@ -41,7 +41,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
 
     this.panel = vscode.window.createWebviewPanel(
       'codeArchitectAnalyzer',
-      'Code Architecture Analyzer',
+      'Haka Insight',
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -488,7 +488,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Architecture Analyzer</title>
+    <title>Haka Insight</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -502,31 +502,55 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         }
         .tab-container {
             display: flex;
-            border-bottom: 1px solid #3e3e42;
-            background-color: #252526;
+            border-bottom: 1px solid #1a1a1a;
+            background-color: #0a0e27;
             flex-shrink: 0;
+            padding: 4px 8px 0 8px;
         }
         .tab-button {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            background-color: #3e3e42;  /* Gray background for inactive */
-            color: #858585;              /* Light gray text */
+            min-width: 90px;
+            max-width: 120px;
+            flex: 0 1 auto;
+            padding: 5px 12px;
+            border: 1px solid #1a3a52 !important;
+            background-color: rgba(10, 14, 39, 0.5) !important;
+            color: #4a90b8 !important;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            border-radius: 0;            /* No rounded corners */
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s ease;
+            font-size: 9px;
+            font-weight: 600;
+            border-radius: 5px;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
-        .tab-button:hover {
-            background-color: #4e4e54;   /* Slightly lighter on hover */
-            color: #cccccc;
+        .tab-button:hover:not(.active) {
+            border-color: #2a5a82 !important;
+            color: #6ab0d8 !important;
+            background-color: rgba(26, 58, 82, 0.3) !important;
         }
         .tab-button.active {
-            background-color: #1e3a52;   /* Dark blue background */
-            color: #ffffff;              /* White text */
-            border-bottom-color: #007acc; /* Blue bottom border */
+            background: #0099cc !important;
+            color: #ffffff !important;
+            border-color: #0099cc !important;
+            box-shadow: 
+                0 0 10px rgba(0, 153, 204, 0.4),
+                0 0 5px rgba(0, 153, 204, 0.3),
+                0 2px 6px rgba(0, 153, 204, 0.2) !important;
+        }
+        .tab-button.active::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            right: -1px;
+            bottom: -1px;
+            background: linear-gradient(135deg, #0099cc, #007799);
+            border-radius: 5px;
+            z-index: -1;
+            opacity: 0.2;
+            filter: blur(3px);
         }
         .content-wrapper {
             flex: 1;
@@ -537,7 +561,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         .tab-content {
             flex: 1;
             overflow-y: auto;
-            padding: 16px;
+            padding: 10px;
             display: none;
         }
         .tab-content.active { display: flex; flex-direction: column; }
@@ -888,9 +912,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         .control-buttons {
             position: absolute;
             bottom: 20px;
-            right: 20px;
+            left: 20px;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 8px;
             z-index: 100;
         }
@@ -898,28 +922,35 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             width: 36px;
             height: 36px;
             padding: 8px;
-            background-color: #007acc;
-            border: none;
+            background-color: rgba(10, 14, 39, 0.5);
+            border: 1px solid #1a3a52;
             border-radius: 4px;
-            color: white;
+            color: #cccccc;
             cursor: pointer;
             font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
         }
-        .control-button:hover { background-color: #005a9e; }
+        .control-button:hover { 
+            background-color: #0099cc;
+            color: #ffffff;
+            border-color: #0099cc;
+        }
         .control-button.export-button {
-            background-color: #4ec9b0;
+            background-color: rgba(10, 14, 39, 0.5);
+            border: 1px solid #1a3a52;
         }
         .control-button.export-button:hover {
-            background-color: #3da88f;
+            background-color: #0099cc;
+            color: #ffffff;
+            border-color: #0099cc;
         }
         .export-menu {
             position: absolute;
-            bottom: 200px;
-            right: 20px;
+            bottom: 70px;
+            left: 20px;
             background-color: #2d2d30;
             border: 1px solid #3e3e42;
             border-radius: 4px;
@@ -1533,9 +1564,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
     </div>
 
     <div class="tab-container">
-        <button class="tab-button active" data-tab="diagram">Diagram</button>
-        <button class="tab-button" data-tab="settings">Settings</button>
-        <button class="tab-button" data-tab="security">Security</button>
+        <button class="tab-button active" data-tab="diagram">Diagrama</button>
+        <button class="tab-button" data-tab="security">Seguridad</button>
+        <button class="tab-button" data-tab="settings">Config</button>
     </div>
 
     <div class="content-wrapper">
@@ -1544,7 +1575,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                 <div class="diagram-wrapper">
                     <svg id="diagram-svg"></svg>
                     
-                    <!-- Unified control buttons in bottom-right corner -->
+                    <!-- Unified control buttons in bottom-left corner -->
                     <div class="control-buttons">
                         <button class="control-button menu-button" id="menu-button" title="Menu">☰</button>
                         <button class="control-button export-button" id="export-button" title="Export">📤</button>
@@ -1968,7 +1999,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                 analyzedFiles: 'Archivos Analizados',
                 
                 // Export menu
-                export: 'Exportar',
+                export: '',
                 exportAsPNG: 'Exportar como PNG',
                 exportAsSVG: 'Exportar como SVG',
                 exportAsMermaid: 'Exportar como Mermaid',

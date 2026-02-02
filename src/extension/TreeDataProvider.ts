@@ -1,6 +1,6 @@
 /**
  * Tree Data Provider for the sidebar view
- * Provides the tree structure for the Code Architecture Analyzer view
+ * Provides the tree structure for the Haka Insight view
  */
 
 import * as vscode from 'vscode';

@@ -44,7 +44,7 @@ export class AnalysisCache {
   getAllAnalyzedFiles(): Array<{ path: string; name: string }> {
     return Array.from(this.cache.keys()).map(path => ({
       path,
-      name: path.split('/').pop() || path,
+      name: path.split(/[/\\]/).pop() || path,
     }));
   }
 
