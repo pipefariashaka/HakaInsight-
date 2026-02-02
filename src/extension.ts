@@ -94,10 +94,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(treeView);
 
 	// When the tree view becomes visible, automatically open the diagram panel
-	let hasAutoOpened = false;
 	treeView.onDidChangeVisibility(async (e) => {
-		if (e.visible && !hasAutoOpened) {
-			hasAutoOpened = true;
+		if (e.visible) {
+			// Always open the diagram panel when the sidebar becomes visible
 			// Small delay to ensure the view is fully loaded
 			setTimeout(async () => {
 				// Open the diagram panel
@@ -110,8 +109,11 @@ export function activate(context: vscode.ExtensionContext) {
 				// Load and display the saved diagram automatically
 				const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
 				if (allAnalyzedFiles.length > 0) {
+					// Get effective layout mode (with fallback if no API key)
+					const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
+					
 					// Build diagram from cache with current visibility settings
-					const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+					const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 					
 					// Get all analyses from cache
 					const allAnalyses = new Map<string, any>();
@@ -131,7 +133,6 @@ export function activate(context: vscode.ExtensionContext) {
 						sidebarPanelManager.updateSecuritySummary(securitySummary);
 					}
 				}
-				hasAutoOpened = false;
 			}, 100);
 		}
 	});
@@ -149,8 +150,11 @@ export function activate(context: vscode.ExtensionContext) {
 			// Load and display the saved diagram automatically
 			const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
 			if (allAnalyzedFiles.length > 0) {
+				// Get effective layout mode (with fallback if no API key)
+				const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
+				
 				// Build diagram from cache with current visibility settings
-				const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+				const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 				
 				// Get all analyses from cache
 				const allAnalyses = new Map<string, any>();
@@ -219,6 +223,61 @@ export function activate(context: vscode.ExtensionContext) {
 		await storageManager.saveModel(model as any, context);
 	});
 
+	sidebarPanelManager.setOnApplyLayoutCallback(async (mode: string) => {
+		console.log('[Extension] Applying layout mode:', mode);
+		
+		// Save layout mode preference
+		await storageManager.saveLayoutMode(mode as any, context);
+		
+		// Get current diagram data
+		const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
+		
+		if (allAnalyzedFiles.length === 0) {
+			throw new Error('No files analyzed yet. Please analyze some files first.');
+		}
+		
+		let finalDiagram;
+		
+		if (mode === 'ai') {
+			// AI-optimized layout using Gemini
+			const apiKey = await storageManager.getAPIKey(context);
+			if (!apiKey) {
+				throw new Error('API Key required for AI-optimized layout. Please configure it in settings.');
+			}
+			
+			// Build diagram structure for AI analysis
+			const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+			
+			// Send to Gemini for optimization
+			const model = await storageManager.getModel(context);
+			const optimizedLayout = await geminiAPIClient.optimizeDiagramLayout(
+				comprehensiveDiagram,
+				apiKey,
+				model as any
+			);
+			
+			finalDiagram = optimizedLayout;
+			
+			// Apply the optimized layout
+			sidebarPanelManager.updateDiagram(optimizedLayout);
+		} else {
+			// Rebuild diagram with selected layout mode
+			const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+			
+			// Add layout mode to diagram metadata
+			comprehensiveDiagram.layoutMode = mode as any;
+			
+			finalDiagram = comprehensiveDiagram;
+			
+			// Update the diagram
+			sidebarPanelManager.updateDiagram(comprehensiveDiagram);
+		}
+		
+		// Save the diagram with the new layout
+		await persistenceManager.scheduleSave(finalDiagram);
+	});
+
+
 	sidebarPanelManager.setOnGenerateAIReportCallback(async (findings: any[]) => {
 		const apiKey = await storageManager.getAPIKey(context);
 		if (!apiKey) {
@@ -282,7 +341,8 @@ export function activate(context: vscode.ExtensionContext) {
 		fileVisibilityMap.set(filePath, visible);
 		// Rebuild diagram with current visibility settings
 		const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
-		const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+		const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
+		const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 		
 		// Get all analyses from cache
 		const allAnalyses = new Map<string, any>();
@@ -627,7 +687,29 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 			fileVisibilityMap.set(fileUri.fsPath, true);
 		}
 		
-		const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, analysisResult, fileVisibilityMap);
+		// Get effective layout mode (with fallback if no API key)
+		const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
+		let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, analysisResult, fileVisibilityMap, effectiveLayoutMode);
+
+		// If AI mode is selected and API key is available, optimize with Gemini
+		if (effectiveLayoutMode === 'ai') {
+			try {
+				const apiKey = await storageManager.getAPIKey(context);
+				if (apiKey) {
+					console.log('[Extension] Optimizing diagram layout with Gemini AI...');
+					const model = await storageManager.getModel(context);
+					comprehensiveDiagram = await geminiAPIClient.optimizeDiagramLayout(
+						comprehensiveDiagram,
+						apiKey,
+						model as any
+					);
+					console.log('[Extension] Diagram optimized successfully');
+				}
+			} catch (error) {
+				console.error('[Extension] Failed to optimize diagram with AI:', error);
+				// Continue with non-optimized diagram
+			}
+		}
 
 		// Get security summary
 		const securitySummary = securityAnalysisManager.getSummary();
@@ -671,9 +753,28 @@ async function navigateToFile(filePath: string, context: vscode.ExtensionContext
 }
 
 /**
+ * Get effective layout mode with fallback
+ * If AI mode is selected but no API key, fallback to hierarchical
+ */
+async function getEffectiveLayoutMode(context: vscode.ExtensionContext, storageManager: any): Promise<string> {
+	const savedLayoutMode = await storageManager.getLayoutMode(context);
+	
+	// If AI mode is selected, check if API key is available
+	if (savedLayoutMode === 'ai') {
+		const apiKey = await storageManager.getAPIKey(context);
+		if (!apiKey) {
+			console.log('[Layout] AI mode selected but no API key, falling back to hierarchical');
+			return 'hierarchical';
+		}
+	}
+	
+	return savedLayoutMode;
+}
+
+/**
  * Build a comprehensive diagram from all cached analyses
  */
-function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, visibilityMap?: Map<string, boolean>): any {
+function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, visibilityMap?: Map<string, boolean>, layoutMode?: string): any {
 	const nodes: any[] = [];
 	const edges: any[] = [];
 	const nodeMap = new Map<string, any>();
@@ -811,6 +912,7 @@ function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, v
 			lastUpdated: new Date().toISOString(),
 			filesAnalyzed: visibleFiles.map(f => f.name),
 		},
+		layoutMode: layoutMode || 'ai', // Default to AI-Optimized
 	};
 }
 

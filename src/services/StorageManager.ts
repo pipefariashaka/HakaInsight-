@@ -12,8 +12,10 @@ import { IStorageManager } from './types';
 const DIAGRAM_STORAGE_KEY = 'code-architect-diagram';
 const API_KEY_STORAGE_KEY = 'code-architect-api-key';
 const MODEL_STORAGE_KEY = 'code-architect-model';
+const LAYOUT_MODE_STORAGE_KEY = 'code-architect-layout-mode';
 
 export type GeminiModel = 'gemini-3-flash-preview' | 'gemini-3-pro';
+export type LayoutMode = 'auto' | 'hierarchical' | 'ai';
 
 export class StorageManager implements IStorageManager {
   private storagePath: string;
@@ -101,6 +103,23 @@ export class StorageManager implements IStorageManager {
       return model || 'gemini-3-flash-preview'; // Default to Flash
     } catch (error) {
       throw new Error(`Failed to get model: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async saveLayoutMode(layoutMode: LayoutMode, context: vscode.ExtensionContext): Promise<void> {
+    try {
+      await context.globalState.update(LAYOUT_MODE_STORAGE_KEY, layoutMode);
+    } catch (error) {
+      throw new Error(`Failed to save layout mode: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getLayoutMode(context: vscode.ExtensionContext): Promise<LayoutMode> {
+    try {
+      const layoutMode = context.globalState.get<LayoutMode>(LAYOUT_MODE_STORAGE_KEY);
+      return layoutMode || 'ai'; // Default to AI-Optimized
+    } catch (error) {
+      throw new Error(`Failed to get layout mode: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

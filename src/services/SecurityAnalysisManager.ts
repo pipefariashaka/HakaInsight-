@@ -104,20 +104,43 @@ export class SecurityAnalysisManager {
 
     /**
      * Calculate overall risk level based on findings
+     * 
+     * Algorithm:
+     * - Critical: Any high severity finding OR score >= 12
+     * - High: Score >= 6 (e.g., 2 high + 1 medium, or 3 medium)
+     * - Medium: Score >= 3 (e.g., 1 high, or 1 medium + 1 low)
+     * - Low: Score < 3 (only low severity findings)
+     * 
+     * Weighted scoring:
+     * - High severity: 5 points (critical issues)
+     * - Medium severity: 2 points (important issues)
+     * - Low severity: 1 point (minor issues)
      */
     private calculateRiskLevel(summary: SecuritySummary): 'critical' | 'high' | 'medium' | 'low' {
-        // Weighted score: high=3, medium=2, low=1
-        const score = (summary.highSeverity * 3) + 
+        // Any high severity finding automatically means critical risk
+        if (summary.highSeverity > 0) {
+            return 'critical';
+        }
+
+        // Weighted score: high=5, medium=2, low=1
+        const score = (summary.highSeverity * 5) + 
                       (summary.mediumSeverity * 2) + 
                       (summary.lowSeverity * 1);
 
-        if (score >= 10) {
+        // Critical: Score >= 12 (e.g., 6+ medium severity issues)
+        if (score >= 12) {
             return 'critical';
-        } else if (score >= 5) {
+        } 
+        // High: Score >= 6 (e.g., 3 medium severity issues)
+        else if (score >= 6) {
             return 'high';
-        } else if (score >= 2) {
+        } 
+        // Medium: Score >= 3 (e.g., 1-2 medium severity issues)
+        else if (score >= 3) {
             return 'medium';
-        } else if (score > 0) {
+        } 
+        // Low: Score < 3 (only low severity findings)
+        else if (score > 0) {
             return 'low';
         }
         

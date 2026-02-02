@@ -40,6 +40,12 @@ export interface DiagramData {
     lastUpdated: string;
     filesAnalyzed: string[];
   };
+  layoutMode?: 'auto' | 'hierarchical' | 'ai';
+  groups?: Array<{
+    name: string;
+    nodes: string[];
+    level: number;
+  }>;
 }
 
 /**

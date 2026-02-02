@@ -19,6 +19,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
   private onClearAPIKeyCallback?: (() => Promise<void>) | undefined;
   private onValidateAPIKeyCallback?: (apiKey: string) => Promise<{ valid: boolean; message: string }>;
   private onSaveModelCallback?: (model: string) => Promise<void>;
+  private onApplyLayoutCallback?: (mode: string) => Promise<void>;
   private onGenerateAIReportCallback?: (findings: any[]) => Promise<string>;
   private onGetRecommendationCallback?: (finding: any) => Promise<string>;
   private onGenerateHTMLReportCallback?: () => Promise<void>;
@@ -180,6 +181,10 @@ export class SidebarPanelManager implements ISidebarPanelManager {
     this.onSaveModelCallback = callback;
   }
 
+  setOnApplyLayoutCallback(callback: (mode: string) => Promise<void>): void {
+    this.onApplyLayoutCallback = callback;
+  }
+
   setOnGenerateAIReportCallback(callback: (findings: any[]) => Promise<string>): void {
     this.onGenerateAIReportCallback = callback;
   }
@@ -312,6 +317,23 @@ export class SidebarPanelManager implements ISidebarPanelManager {
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`Failed to save model: ${errorMessage}`);
+          }
+        }
+        break;
+      case 'applyLayout':
+        if (this.onApplyLayoutCallback) {
+          try {
+            await this.onApplyLayoutCallback(message.mode);
+            this.panel?.webview.postMessage({
+              command: 'layoutApplied',
+              mode: message.mode,
+            });
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            this.panel?.webview.postMessage({
+              command: 'layoutError',
+              message: errorMessage,
+            });
           }
         }
         break;
@@ -765,7 +787,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         }
         /* Keep old button styles for other parts */
         .button-group { display: flex; gap: 8px; margin-top: 8px; }
-        button:not(.button-compact) {
+        .button-group button:not(.button-compact) {
             flex: 1;
             padding: 8px 16px;
             background-color: #007acc;
@@ -777,12 +799,12 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             font-weight: 500;
             transition: background-color 0.2s ease;
         }
-        button:not(.button-compact):hover { background-color: #005a9e; }
-        button.secondary:not(.button-compact) {
+        .button-group button:not(.button-compact):hover { background-color: #005a9e; }
+        .button-group button.secondary:not(.button-compact) {
             background-color: #3e3e42;
             color: #cccccc;
         }
-        button.secondary:not(.button-compact):hover { background-color: #4e4e54; }
+        .button-group button.secondary:not(.button-compact):hover { background-color: #4e4e54; }
         .success-message {
             padding: 12px;
             background-color: #0a3a0a;
@@ -1272,11 +1294,16 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         .risk-level-container {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
             gap: 12px;
             padding: 16px;
             background-color: #1e1e1e;
             border-radius: 4px;
+        }
+        .risk-level-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .risk-level-label {
             font-size: 13px;
@@ -1311,40 +1338,212 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             color: #4ec94e;
             border: 1px solid #4ec94e;
         }
+        .risk-info-button {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            min-height: 18px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            background-color: rgba(125, 184, 233, 0.2);
+            color: #7db8e9;
+            border: 1px solid #7db8e9;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            margin-left: auto;
+        }
+        .risk-info-button:hover {
+            background-color: #0099cc;
+            color: #ffffff;
+            border-color: #0099cc;
+            transform: scale(1.15);
+        }
+        .risk-info-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .risk-info-modal.show {
+            display: flex;
+        }
+        .risk-info-content {
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .risk-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .risk-info-header h4 {
+            margin: 0;
+            font-size: 15px;
+            color: #7db8e9;
+        }
+        .risk-info-close {
+            background: none;
+            border: none;
+            color: #858585;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+        .risk-info-close:hover {
+            background-color: #3e3e42;
+            color: #ffffff;
+        }
+        .risk-info-body {
+            padding: 20px;
+            color: #cccccc;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .risk-info-body p {
+            margin: 0 0 16px 0;
+        }
+        .risk-formula {
+            background-color: rgba(10, 14, 39, 0.3);
+            border: 1px solid #1a3a52;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        .risk-formula-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .severity-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            min-width: 60px;
+            text-align: center;
+        }
+        .severity-badge.high {
+            background-color: #5a1e1e;
+            color: #f48771;
+            border: 1px solid #f48771;
+        }
+        .severity-badge.medium {
+            background-color: #5a3a1e;
+            color: #dcdcaa;
+            border: 1px solid #dcdcaa;
+        }
+        .severity-badge.low {
+            background-color: #1e5a1e;
+            color: #4ec94e;
+            border: 1px solid #4ec94e;
+        }
+        .formula-text {
+            color: #7db8e9;
+            font-family: 'Courier New', monospace;
+        }
+        .risk-levels {
+            margin-top: 16px;
+        }
+        .risk-level-item {
+            padding: 10px 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid;
+        }
+        .risk-level-item.critical {
+            background-color: rgba(90, 30, 30, 0.2);
+            border-left-color: #f48771;
+        }
+        .risk-level-item.high {
+            background-color: rgba(90, 58, 30, 0.2);
+            border-left-color: #dcdcaa;
+        }
+        .risk-level-item.medium {
+            background-color: rgba(30, 58, 90, 0.2);
+            border-left-color: #4ec9b0;
+        }
+        .risk-level-item.low {
+            background-color: rgba(30, 90, 30, 0.2);
+            border-left-color: #4ec94e;
+        }
+        .risk-level-item strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+        }
+        .risk-level-item p {
+            margin: 0;
+            font-size: 11px;
+            color: #cccccc;
+        }
         .ai-report-section {
             margin-top: 20px;
-            padding: 16px;
-            background-color: #1e1e1e;
-            border-radius: 4px;
-            border: 1px solid #3e3e42;
+            padding: 20px;
+            background-color: rgba(10, 14, 39, 0.3);
+            border-radius: 6px;
+            border: 1px solid #1a3a52;
         }
         .ai-report-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(26, 58, 82, 0.5);
         }
         .ai-report-header h4 {
             margin: 0;
-            font-size: 13px;
-            color: #cccccc;
+            font-size: 14px;
+            color: #7db8e9;
+            font-weight: 600;
         }
         .button-regenerate {
-            padding: 4px 10px;
-            background-color: #3e3e42;
-            color: #cccccc;
-            border: none;
+            padding: 5px 12px;
+            background-color: rgba(10, 14, 39, 0.5);
+            color: #7db8e9;
+            border: 1px solid #1a3a52;
             border-radius: 3px;
             cursor: pointer;
             font-size: 10px;
             font-weight: 500;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 4px;
             transition: all 0.2s ease;
+            white-space: nowrap;
         }
         .button-regenerate:hover {
-            background-color: #4e4e54;
+            background-color: #0099cc;
+            color: #ffffff;
+            border-color: #0099cc;
         }
         .button-regenerate:disabled {
             opacity: 0.5;
@@ -1362,14 +1561,14 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 30px 20px;
             gap: 12px;
         }
         .loading-spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid #3e3e42;
-            border-top-color: #007acc;
+            width: 28px;
+            height: 28px;
+            border: 3px solid rgba(26, 58, 82, 0.3);
+            border-top-color: #0099cc;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -1378,13 +1577,16 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         }
         .loading-text {
             font-size: 11px;
-            color: #858585;
+            color: #7db8e9;
         }
         .ai-report-text {
             font-size: 12px;
-            line-height: 1.6;
+            line-height: 1.7;
             color: #cccccc;
             white-space: pre-wrap;
+            padding: 8px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
         }
         .security-findings {
             background-color: #252526;
@@ -1475,7 +1677,19 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         }
         .finding-file {
             font-size: 11px;
-            color: #858585;
+            color: #7db8e9;
+            background-color: rgba(125, 184, 233, 0.1);
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 6px;
+            margin-bottom: 6px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(125, 184, 233, 0.2);
+        }
+        .finding-file::before {
+            content: '📄 ';
+            margin-right: 4px;
         }
         .finding-actions {
             margin-top: 8px;
@@ -1483,21 +1697,25 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             gap: 8px;
         }
         .button-recommendation {
-            padding: 4px 10px;
-            background-color: #2d3a4e;
+            padding: 5px 12px;
+            background-color: rgba(10, 14, 39, 0.5);
             color: #7db8e9;
-            border: 1px solid #4e6a8a;
+            border: 1px solid #1a3a52;
             border-radius: 3px;
             cursor: pointer;
             font-size: 10px;
             font-weight: 500;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 4px;
             transition: all 0.2s ease;
+            width: auto;
+            white-space: nowrap;
         }
         .button-recommendation:hover {
-            background-color: #3a4a5e;
+            background-color: #0099cc;
+            color: #ffffff;
+            border-color: #0099cc;
         }
         .button-recommendation:disabled {
             opacity: 0.5;
@@ -1634,7 +1852,33 @@ export class SidebarPanelManager implements ISidebarPanelManager {
 
                 <div class="settings-section">
                     <div class="settings-section-header">
-                        <span class="settings-section-icon">🔑</span>
+                        <span class="settings-section-icon">🎯</span>
+                        <span class="settings-section-title">Diagram Layout</span>
+                    </div>
+                    <div class="settings-section-content">
+                        <div class="form-group-compact">
+                            <label for="layout-mode" class="label-compact">Layout Optimization</label>
+                            <select id="layout-mode" class="input-compact">
+                                <option value="ai" selected>AI-Optimized (Gemini)</option>
+                                <option value="hierarchical">Hierarchical (Layered)</option>
+                                <option value="auto">Automatic (D3 Force-Directed)</option>
+                            </select>
+                            <div class="help-text">
+                                <strong>AI-Optimized:</strong> Gemini analyzes and optimizes the layout (requires API key)<br>
+                                <strong>Hierarchical:</strong> Organized in layers, reduces crossings<br>
+                                <strong>Automatic:</strong> Fast, physics-based layout
+                            </div>
+                        </div>
+                        <button id="apply-layout-btn" class="button-primary" style="margin-top: 10px;">
+                            Apply Layout
+                        </button>
+                        <div id="layout-status" class="connection-status"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <span class="settings-section-icon">�</span>
                         <span class="settings-section-title">API Configuration</span>
                     </div>
                     <div class="settings-section-content">
@@ -1761,8 +2005,11 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                             </div>
                         </div>
                         <div class="risk-level-container">
-                            <div class="risk-level-label" data-i18n="overallRiskLevel">Overall Risk Level:</div>
-                            <div class="risk-level-badge" id="risk-level-badge" data-i18n="riskLow">Low</div>
+                            <div class="risk-level-content">
+                                <div class="risk-level-label" data-i18n="overallRiskLevel">Overall Risk Level:</div>
+                                <div class="risk-level-badge" id="risk-level-badge" data-i18n="riskLow">Low</div>
+                            </div>
+                            <button class="risk-info-button" id="risk-info-btn" title="How is risk calculated?">?</button>
                         </div>
                         
                         <div class="ai-report-section" id="ai-report-section" style="display: none;">
@@ -1822,6 +2069,53 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         </div>
     </div>
 
+    <!-- Risk calculation info modal -->
+    <div class="risk-info-modal" id="risk-info-modal">
+        <div class="risk-info-content">
+            <div class="risk-info-header">
+                <h4>Risk Level Calculation</h4>
+                <button class="risk-info-close" id="risk-info-close">X</button>
+            </div>
+            <div class="risk-info-body">
+                <p><strong>How we calculate the overall risk level:</strong></p>
+                
+                <div class="risk-formula">
+                    <div class="risk-formula-item">
+                        <span class="severity-badge high">High</span>
+                        <span class="formula-text">x 5 points</span>
+                    </div>
+                    <div class="risk-formula-item">
+                        <span class="severity-badge medium">Medium</span>
+                        <span class="formula-text">x 2 points</span>
+                    </div>
+                    <div class="risk-formula-item">
+                        <span class="severity-badge low">Low</span>
+                        <span class="formula-text">x 1 point</span>
+                    </div>
+                </div>
+                
+                <div class="risk-levels">
+                    <div class="risk-level-item critical">
+                        <strong>CRITICAL</strong>
+                        <p>Any high severity finding OR score &gt;= 12</p>
+                    </div>
+                    <div class="risk-level-item high">
+                        <strong>HIGH</strong>
+                        <p>Score &gt;= 6 (e.g., 3 medium issues)</p>
+                    </div>
+                    <div class="risk-level-item medium">
+                        <strong>MEDIUM</strong>
+                        <p>Score &gt;= 3 (e.g., 1-2 medium issues)</p>
+                    </div>
+                    <div class="risk-level-item low">
+                        <strong>LOW</strong>
+                        <p>Score &lt; 3 (only low severity findings)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const vscode = acquireVsCodeApi();
         let diagramRenderer = null;
@@ -1834,7 +2128,31 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         let dragStartX = 0;
         let dragStartY = 0;
         let fileVisibilityMap = new Map(); // Track which files are visible
+        let currentFindings = []; // Store current findings for regeneration
         let analysisDataMap = new Map(); // Store analysis data for each file
+        
+        // Helper functions to avoid regex in code (causes issues in VS Code webviews)
+        function sanitizeId(str) {
+            return str.toLowerCase()
+                .split('').map(c => /[a-z0-9]/.test(c) ? c : '_').join('')
+                .split('_').filter(s => s).join('_');
+        }
+        
+        function removeUnderscores(str) {
+            return str.split('_').join('');
+        }
+        
+        function escapeQuotes(str) {
+            return str.split('"').join('\\\\"');
+        }
+        
+        function replaceDoubleNewlines(str) {
+            return str.split('\\n\\n').join('</p><p>');
+        }
+        
+        function replaceSingleNewlines(str) {
+            return str.split('\\n').join('<br>');
+        }
         
         const translations = {
             en: {
@@ -2268,6 +2586,30 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             });
         }
 
+        // Add event listener for apply layout button
+        const applyLayoutBtn = document.getElementById('apply-layout-btn');
+        if (applyLayoutBtn) {
+            applyLayoutBtn.addEventListener('click', () => {
+                const layoutMode = document.getElementById('layout-mode');
+                const layoutStatus = document.getElementById('layout-status');
+                
+                if (layoutMode) {
+                    const selectedMode = layoutMode.value;
+                    
+                    // Show loading state
+                    layoutStatus.textContent = 'Applying layout...';
+                    layoutStatus.className = 'connection-status visible loading';
+                    applyLayoutBtn.disabled = true;
+                    
+                    // Send message to extension
+                    vscode.postMessage({ 
+                        command: 'applyLayout', 
+                        mode: selectedMode 
+                    });
+                }
+            });
+        }
+
         // Tab switching
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', () => {
@@ -2353,7 +2695,21 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         }
 
         function regenerateAIReport() {
-            vscode.postMessage({ command: 'regenerateAIReport' });
+            // Get current findings from the summary
+            const findingsList = document.getElementById('findings-list');
+            if (!findingsList || findingsList.children.length === 0) {
+                console.warn('[Webview] No findings available to regenerate report');
+                return;
+            }
+            
+            // Show loading state
+            displayAIReport('loading');
+            
+            // Send message with current findings
+            vscode.postMessage({ 
+                command: 'regenerateAIReport',
+                findings: currentFindings || []
+            });
         }
 
         function displayAIReport(report) {
@@ -2386,6 +2742,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                 document.getElementById('security-content').style.display = 'none';
                 return;
             }
+
+            // Store findings for regeneration
+            currentFindings = summary.findings || [];
 
             // Hide empty state, show content
             document.getElementById('security-empty-state').style.display = 'none';
@@ -2434,7 +2793,17 @@ export class SidebarPanelManager implements ISidebarPanelManager {
 
                 const findingFile = document.createElement('div');
                 findingFile.className = 'finding-file';
-                findingFile.textContent = finding.file + (finding.line ? ':' + finding.line : '');
+                
+                // Extract just the filename from the path
+                const fullPath = finding.file + (finding.line ? ':' + finding.line : '');
+                // Split by both / and \\ to get filename
+                const pathParts = finding.file.split('/');
+                const pathParts2 = pathParts[pathParts.length - 1].split('\\\\');
+                const fileName = pathParts2[pathParts2.length - 1] || finding.file;
+                const displayText = fileName + (finding.line ? ':' + finding.line : '');
+                
+                findingFile.textContent = displayText;
+                findingFile.title = fullPath; // Show full path on hover
 
                 // Add recommendation button and panel
                 const findingActions = document.createElement('div');
@@ -2516,12 +2885,15 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     if (!diagramData || !diagramData.nodes) return;
                     console.log('Render called with diagramData:', diagramData);
                     console.log('Edges in diagramData:', diagramData.edges);
+                    console.log('Layout mode:', diagramData.layoutMode);
                     this.nodes.clear();
                     diagramData.nodes.forEach(node => {
                         // Use saved position if available, otherwise will be calculated in organizeLayers
                         this.nodes.set(node.id, node);
                     });
                     this.edges = diagramData.edges || [];
+                    this.layoutMode = diagramData.layoutMode || 'auto';
+                    this.groups = diagramData.groups || [];
                     console.log('Edges assigned to renderer:', this.edges);
                     this.draw();
                 },
@@ -2726,7 +3098,17 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     const nodesArray = Array.from(this.nodes.values());
                     const nodeCount = nodesArray.length;
                     
-                    // Calculate grid dimensions
+                    // Apply layout based on mode
+                    if (this.layoutMode === 'hierarchical' || this.layoutMode === 'ai') {
+                        this.applyHierarchicalLayout(nodesArray, width, height);
+                    } else {
+                        // Default auto layout (grid)
+                        this.applyGridLayout(nodesArray, width, height);
+                    }
+                },
+                
+                applyGridLayout: function(nodesArray, width, height) {
+                    const nodeCount = nodesArray.length;
                     const cols = Math.ceil(Math.sqrt(nodeCount));
                     const rows = Math.ceil(nodeCount / cols);
                     
@@ -2739,13 +3121,90 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     const startY = 50;
                     
                     nodesArray.forEach((node, index) => {
-                        // Only set position if not already set (from saved positions or previous drag)
+                        // Only set position if not already set
                         if (node.x === undefined || node.y === undefined) {
                             const col = index % cols;
                             const row = Math.floor(index / cols);
                             node.x = startX + col * horizontalSpacing;
                             node.y = startY + row * verticalSpacing;
                         }
+                    });
+                },
+                
+                applyHierarchicalLayout: function(nodesArray, width, height) {
+                    // Group nodes by level if groups are provided (from AI)
+                    const nodesByLevel = new Map();
+                    
+                    if (this.groups && this.groups.length > 0) {
+                        // Use AI-provided groups
+                        this.groups.forEach(group => {
+                            if (!nodesByLevel.has(group.level)) {
+                                nodesByLevel.set(group.level, []);
+                            }
+                            group.nodes.forEach(nodeId => {
+                                const node = this.nodes.get(nodeId);
+                                if (node) {
+                                    nodesByLevel.get(group.level).push(node);
+                                }
+                            });
+                        });
+                        
+                        // Add ungrouped nodes to level 0
+                        nodesArray.forEach(node => {
+                            let found = false;
+                            for (const group of this.groups) {
+                                if (group.nodes.includes(node.id)) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                if (!nodesByLevel.has(0)) {
+                                    nodesByLevel.set(0, []);
+                                }
+                                nodesByLevel.get(0).push(node);
+                            }
+                        });
+                    } else {
+                        // Simple hierarchical layout based on dependencies
+                        // Level 0: nodes with no incoming edges
+                        // Level 1: nodes that depend on level 0
+                        // etc.
+                        const incomingEdges = new Map();
+                        nodesArray.forEach(node => incomingEdges.set(node.id, 0));
+                        
+                        this.edges.forEach(edge => {
+                            const count = incomingEdges.get(edge.target) || 0;
+                            incomingEdges.set(edge.target, count + 1);
+                        });
+                        
+                        // Assign levels
+                        nodesArray.forEach(node => {
+                            const level = incomingEdges.get(node.id) === 0 ? 0 : 1;
+                            if (!nodesByLevel.has(level)) {
+                                nodesByLevel.set(level, []);
+                            }
+                            nodesByLevel.get(level).push(node);
+                        });
+                    }
+                    
+                    // Position nodes by level
+                    const verticalSpacing = 180;
+                    const horizontalSpacing = 200;
+                    const startY = 80;
+                    
+                    const levels = Array.from(nodesByLevel.keys()).sort((a, b) => a - b);
+                    
+                    levels.forEach(level => {
+                        const levelNodes = nodesByLevel.get(level);
+                        const levelWidth = levelNodes.length * horizontalSpacing;
+                        const startX = Math.max(50, (width - levelWidth) / 2);
+                        const y = startY + level * verticalSpacing;
+                        
+                        levelNodes.forEach((node, index) => {
+                            node.x = startX + index * horizontalSpacing;
+                            node.y = y;
+                        });
                     });
                 }
             };
@@ -2883,7 +3342,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     // Store analysis data for details panel
                     if (message.analysisResult && message.analysisResult.currentFile) {
                         const fileName = message.analysisResult.currentFile.name;
-                        const fileId = fileName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                        const fileId = sanitizeId(fileName);
                         analysisDataMap.set(fileId, message.analysisResult);
                         analysisDataMap.set(fileName, message.analysisResult);
                     }
@@ -2916,7 +3375,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                         message.analyses.forEach(item => {
                             if (item.analysis && item.analysis.currentFile) {
                                 const fileName = item.analysis.currentFile.name;
-                                const fileId = fileName.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                                const fileId = sanitizeId(fileName);
                                 analysisDataMap.set(fileId, item.analysis);
                                 analysisDataMap.set(fileName, item.analysis);
                             }
@@ -2960,6 +3419,41 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     }
                     
                     testBtn.disabled = false;
+                    break;
+                case 'layoutApplied':
+                    const layoutStatus = document.getElementById('layout-status');
+                    const applyLayoutBtn = document.getElementById('apply-layout-btn');
+                    
+                    if (layoutStatus) {
+                        const modeNames = {
+                            'auto': 'Automatic',
+                            'hierarchical': 'Hierarchical',
+                            'ai': 'AI-Optimized'
+                        };
+                        layoutStatus.textContent = modeNames[message.mode] + ' layout applied successfully!';
+                        layoutStatus.className = 'connection-status visible success';
+                        
+                        setTimeout(() => {
+                            layoutStatus.className = 'connection-status';
+                        }, 3000);
+                    }
+                    
+                    if (applyLayoutBtn) {
+                        applyLayoutBtn.disabled = false;
+                    }
+                    break;
+                case 'layoutError':
+                    const layoutStatusError = document.getElementById('layout-status');
+                    const applyLayoutBtnError = document.getElementById('apply-layout-btn');
+                    
+                    if (layoutStatusError) {
+                        layoutStatusError.textContent = 'Error: ' + message.message;
+                        layoutStatusError.className = 'connection-status visible error';
+                    }
+                    
+                    if (applyLayoutBtnError) {
+                        applyLayoutBtnError.disabled = false;
+                    }
                     break;
                 case 'setModel':
                     const modelSelect = document.getElementById('model');
@@ -3006,7 +3500,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     if (!nodeDataToUpdate) {
                         for (const [key, value] of analysisDataMap.entries()) {
                             const keyLower = key.toLowerCase();
-                            if (keyLower.startsWith(nodeIdLower) || keyLower.replace(/_/g, '') === nodeIdLower.replace(/_/g, '')) {
+                            const keyNoUnderscore = removeUnderscores(keyLower);
+                            const nodeIdNoUnderscore = removeUnderscores(nodeIdLower);
+                            if (keyLower.startsWith(nodeIdLower) || keyNoUnderscore === nodeIdNoUnderscore) {
                                 nodeDataToUpdate = value;
                                 nodeKeyUsed = key;
                                 break;
@@ -3241,8 +3737,8 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             }
             
             // Convert line breaks
-            html = html.replace(/\\n\\n/g, '</p><p>');
-            html = html.replace(/\\n/g, '<br>');
+            html = replaceDoubleNewlines(html);
+            html = replaceSingleNewlines(html);
             
             // Wrap in paragraph if needed
             if (!html.startsWith('<')) {
@@ -3279,7 +3775,13 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                 html += '<div class="details-section" id="explanation-section">';
                 html += '<div class="details-section-title">📝 ' + t('explanation').toUpperCase() + '</div>';
                 html += '<div class="details-section-text" id="explanation-text">' + convertMarkdownToHTML(analysisData.explanation) + '</div>';
-                html += '<button class="deepen-button" data-node-id="' + node.id.replace(/"/g, '&quot;') + '" data-node-label="' + node.label.replace(/"/g, '&quot;') + '" data-node-path="' + (node.path || '').replace(/"/g, '&quot;') + '" style="margin-top: 10px; padding: 8px 16px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">';
+                
+                // Escape attributes to avoid regex issues in template strings
+                const escapedNodeId = node.id.split('"').join('&quot;');
+                const escapedNodeLabel = node.label.split('"').join('&quot;');
+                const escapedNodePath = (node.path || '').split('"').join('&quot;');
+                
+                html += '<button class="deepen-button" data-node-id="' + escapedNodeId + '" data-node-label="' + escapedNodeLabel + '" data-node-path="' + escapedNodePath + '" style="margin-top: 10px; padding: 8px 16px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">';
                 html += '🔍 ' + (currentLanguage === 'es' ? 'Profundizar' : 'Deepen Analysis');
                 html += '</button>';
                 html += '</div>';
@@ -3641,8 +4143,8 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             
             // Add nodes
             currentDiagramData.nodes.forEach(node => {
-                const nodeId = node.id.replace(/[^a-zA-Z0-9]/g, '_');
-                const label = node.label.replace(/"/g, '\\\\"');
+                const nodeId = sanitizeId(node.id);
+                const label = escapeQuotes(node.label);
                 if (node.isCurrentFile) {
                     mermaidCode += \`    \${nodeId}["\${label}"]:::current\\n\`;
                 } else {
@@ -3654,8 +4156,8 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             
             // Add edges
             currentDiagramData.edges.forEach(edge => {
-                const sourceId = edge.source.replace(/[^a-zA-Z0-9]/g, '_');
-                const targetId = edge.target.replace(/[^a-zA-Z0-9]/g, '_');
+                const sourceId = sanitizeId(edge.source);
+                const targetId = sanitizeId(edge.target);
                 mermaidCode += \`    \${sourceId} --> \${targetId}\\n\`;
             });
             
@@ -3860,6 +4362,32 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             if (regenerateBtn) {
                 regenerateBtn.addEventListener('click', regenerateAIReport);
                 console.log('[Webview] Added listener to regenerateBtn');
+            }
+
+            // Risk info modal
+            const riskInfoBtn = document.getElementById('risk-info-btn');
+            const riskInfoModal = document.getElementById('risk-info-modal');
+            const riskInfoClose = document.getElementById('risk-info-close');
+            
+            if (riskInfoBtn && riskInfoModal) {
+                riskInfoBtn.addEventListener('click', () => {
+                    riskInfoModal.classList.add('show');
+                });
+            }
+            
+            if (riskInfoClose && riskInfoModal) {
+                riskInfoClose.addEventListener('click', () => {
+                    riskInfoModal.classList.remove('show');
+                });
+            }
+            
+            // Close modal when clicking outside
+            if (riskInfoModal) {
+                riskInfoModal.addEventListener('click', (e) => {
+                    if (e.target === riskInfoModal) {
+                        riskInfoModal.classList.remove('show');
+                    }
+                });
             }
 
             const generateReportBtn = document.getElementById('generate-report-btn');

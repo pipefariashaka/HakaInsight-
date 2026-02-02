@@ -723,4 +723,122 @@ Please provide:
 
 Keep it concise and practical. Maximum 150 words.`;
   }
+
+  /**
+   * Optimizes diagram layout using AI
+   * Analyzes the diagram structure and suggests optimal node positions
+   * 
+   * @param diagram - The current diagram data
+   * @param apiKey - The Gemini API key
+   * @param model - The Gemini model to use
+   * @returns Promise<DiagramData> - Optimized diagram with new layout
+   */
+  async optimizeDiagramLayout(
+    diagram: DiagramData,
+    apiKey: string,
+    model: GeminiModel = 'gemini-3-flash-preview'
+  ): Promise<DiagramData> {
+    try {
+      const prompt = this.buildLayoutOptimizationPrompt(diagram);
+      
+      const response = await axios.post(
+        `${this.getApiUrl(model)}?key=${apiKey}`,
+        {
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          timeout: DEEPEN_ANALYSIS_TIMEOUT_MS,
+        }
+      );
+
+      if (!response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error(INVALID_RESPONSE_MESSAGE);
+      }
+
+      const responseText = response.data.candidates[0].content.parts[0].text;
+      
+      // Parse the AI response to extract layout suggestions
+      const optimizedDiagram = this.parseLayoutOptimization(responseText, diagram);
+      
+      return optimizedDiagram;
+    } catch (error) {
+      throw new Error(`Failed to optimize layout: ${this.handleAnalysisError(error)}`);
+    }
+  }
+
+  /**
+   * Build prompt for layout optimization
+   */
+  private buildLayoutOptimizationPrompt(diagram: DiagramData): string {
+    const nodesList = diagram.nodes.map(n => `- ${n.id}: ${n.label}`).join('\n');
+    const edgesList = diagram.edges.map(e => `- ${e.source} → ${e.target} (${e.type})`).join('\n');
+    
+    return `Analyze this code architecture diagram and suggest an optimized layout to minimize edge crossings and improve readability.
+
+NODES (${diagram.nodes.length}):
+${nodesList}
+
+EDGES (${diagram.edges.length}):
+${edgesList}
+
+Please analyze the relationships and suggest:
+1. Logical grouping of related nodes (modules/layers)
+2. Hierarchical levels (which nodes should be at top, middle, bottom)
+3. Optimal positioning to reduce edge crossings
+
+Respond ONLY with a JSON object in this exact format:
+{
+  "groups": [
+    {
+      "name": "group_name",
+      "nodes": ["node_id1", "node_id2"],
+      "level": 0
+    }
+  ],
+  "layout": "hierarchical"
 }
+
+Where:
+- groups: Array of node groupings with their hierarchical level (0=top, 1=middle, 2=bottom, etc.)
+- layout: Always "hierarchical"
+
+Keep it simple and practical. Focus on reducing visual complexity.`;
+  }
+
+  /**
+   * Parse AI layout optimization response
+   */
+  private parseLayoutOptimization(responseText: string, originalDiagram: DiagramData): DiagramData {
+    try {
+      // Extract JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.warn('No JSON found in AI response, using original diagram');
+        return { ...originalDiagram, layoutMode: 'hierarchical' };
+      }
+
+      const layoutData = JSON.parse(jsonMatch[0]);
+      
+      // Apply the layout suggestions
+      const optimizedDiagram: DiagramData = {
+        ...originalDiagram,
+        layoutMode: 'hierarchical',
+        groups: layoutData.groups || []
+      };
+
+      return optimizedDiagram;
+    } catch (error) {
+      console.error('Failed to parse layout optimization:', error);
+      return { ...originalDiagram, layoutMode: 'hierarchical' };
+    }
+  }
+}
+
