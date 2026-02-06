@@ -840,5 +840,106 @@ Keep it simple and practical. Focus on reducing visual complexity.`;
       return { ...originalDiagram, layoutMode: 'hierarchical' };
     }
   }
+
+  /**
+   * Analyzes code quality and identifies potential bugs and improvements
+   * 
+   * @param analyzedFiles - Array of analyzed file paths
+   * @param apiKey - The Gemini API key
+   * @param model - The Gemini model to use
+   * @returns Promise with quality analysis results
+   */
+  async analyzeCodeQuality(analyzedFiles: string[], apiKey: string, model: GeminiModel): Promise<any> {
+    const prompt = `Analyze the following files for code quality issues. Identify:
+1. Potential bugs or errors
+2. Code improvement opportunities
+3. Performance optimizations
+4. Best practices violations
+
+Files analyzed: ${analyzedFiles.join(', ')}
+
+Provide your analysis in the following JSON format:
+{
+  "bugs": [
+    {
+      "title": "Bug title",
+      "description": "Detailed description",
+      "severity": "high|medium|low",
+      "file": "filename",
+      "line": 123,
+      "suggestion": "How to fix it"
+    }
+  ],
+  "improvements": [
+    {
+      "title": "Improvement title",
+      "description": "What can be improved",
+      "severity": "medium|low",
+      "file": "filename",
+      "suggestion": "Suggested improvement"
+    }
+  ],
+  "performance": [
+    {
+      "title": "Performance issue",
+      "description": "Performance concern",
+      "severity": "high|medium|low",
+      "file": "filename",
+      "suggestion": "Optimization suggestion"
+    }
+  ],
+  "bestPractices": [
+    {
+      "title": "Best practice violation",
+      "description": "What practice is violated",
+      "severity": "medium|low",
+      "file": "filename",
+      "suggestion": "How to follow best practices"
+    }
+  ]
 }
 
+Focus on actionable, specific issues. Be concise but informative.`;
+
+    try {
+      const response = await axios.post(
+        `${this.getApiUrl(model)}?key=${apiKey}`,
+        {
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 4096,
+          }
+        },
+        {
+          timeout: API_TIMEOUT_MS,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error(INVALID_RESPONSE_MESSAGE);
+      }
+
+      // Parse JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('No JSON found in response:', text);
+        return { bugs: [], improvements: [], performance: [], bestPractices: [] };
+      }
+
+      const result = JSON.parse(jsonMatch[0]);
+      return result;
+    } catch (error) {
+      console.error('Code quality analysis failed:', error);
+      return { bugs: [], improvements: [], performance: [], bestPractices: [] };
+    }
+  }
+}

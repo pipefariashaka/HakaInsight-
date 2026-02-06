@@ -29,6 +29,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
   private onToggleFileVisibilityCallback?: (filePath: string, visible: boolean) => Promise<void>;
   private onGetCacheStatsCallback?: () => Promise<void>;
   private onDeepenAnalysisCallback?: (nodeId: string, nodeLabel: string, nodePath?: string) => Promise<void>;
+  private onAnalyzeCodeQualityCallback?: () => Promise<any>;
   private messageDisposable: vscode.Disposable | undefined;
 
   createPanel(context: vscode.ExtensionContext, analysisCache?: any): void {
@@ -221,6 +222,10 @@ export class SidebarPanelManager implements ISidebarPanelManager {
     this.onDeepenAnalysisCallback = callback;
   }
 
+  setOnAnalyzeCodeQualityCallback(callback: () => Promise<any>): void {
+    this.onAnalyzeCodeQualityCallback = callback;
+  }
+
   sendDeepenedExplanation(nodeId: string, explanation: string): void {
     if (this.panel) {
       this.panel.webview.postMessage({
@@ -387,6 +392,20 @@ export class SidebarPanelManager implements ISidebarPanelManager {
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`Failed to generate report: ${errorMessage}`);
+          }
+        }
+        break;
+      case 'analyzeCodeQuality':
+        if (this.onAnalyzeCodeQualityCallback) {
+          try {
+            const result = await this.onAnalyzeCodeQualityCallback();
+            this.panel?.webview.postMessage({
+              command: 'qualityAnalysisResult',
+              result: result,
+            });
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            vscode.window.showErrorMessage(`Failed to analyze code quality: ${errorMessage}`);
           }
         }
         break;
@@ -1770,6 +1789,156 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         .button-generate-report .button-icon {
             font-size: 16px;
         }
+
+        /* Quality Tab Styles */
+        .quality-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .quality-header {
+            margin-bottom: 24px;
+        }
+        .quality-header h3 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+            color: #cccccc;
+        }
+        .quality-description {
+            margin: 0;
+            font-size: 13px;
+            color: #858585;
+        }
+        .quality-empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .quality-content {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .quality-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-card.stat-info {
+            border-left: 3px solid #4ec9b0;
+        }
+        .stat-card.stat-warning {
+            border-left: 3px solid #dcdcaa;
+        }
+        .quality-actions {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .quality-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .quality-section {
+            background-color: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 6px;
+            padding: 20px;
+        }
+        .quality-section h4 {
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            color: #cccccc;
+            font-weight: 600;
+        }
+        .quality-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .quality-item {
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .quality-item-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .quality-item-severity {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .quality-item-severity.critical {
+            background-color: #5a1e1e;
+            color: #f48771;
+        }
+        .quality-item-severity.high {
+            background-color: #5a3a1e;
+            color: #dcdcaa;
+        }
+        .quality-item-severity.medium {
+            background-color: #1e3a5a;
+            color: #4ec9b0;
+        }
+        .quality-item-severity.low {
+            background-color: #1e5a1e;
+            color: #4ec94e;
+        }
+        .quality-item-title {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 500;
+            color: #cccccc;
+        }
+        .quality-item-description {
+            font-size: 12px;
+            color: #858585;
+            line-height: 1.5;
+        }
+        .quality-item-file {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background-color: rgba(30, 58, 90, 0.3);
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #7db8e9;
+        }
+        .quality-item-suggestion {
+            margin-top: 8px;
+            padding: 12px;
+            background-color: rgba(78, 201, 176, 0.1);
+            border-left: 3px solid #4ec9b0;
+            border-radius: 4px;
+        }
+        .quality-item-suggestion-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #4ec9b0;
+            margin-bottom: 4px;
+        }
+        .quality-item-suggestion-text {
+            font-size: 12px;
+            color: #cccccc;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -1784,6 +1953,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
     <div class="tab-container">
         <button class="tab-button active" data-tab="diagram">Diagrama</button>
         <button class="tab-button" data-tab="security">Seguridad</button>
+        <button class="tab-button" data-tab="quality">Calidad</button>
         <button class="tab-button" data-tab="settings">Config</button>
     </div>
 
@@ -2042,6 +2212,67 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                             <span class="button-icon">📄</span>
                             <span class="button-text" data-i18n="generateReport">Generate Report</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="quality-tab">
+            <div class="quality-container">
+                <div class="quality-header">
+                    <h3>📊 Análisis de Calidad del Código</h3>
+                    <p class="quality-description">Identifica oportunidades de mejora y posibles bugs en tu código</p>
+                </div>
+
+                <div class="quality-actions">
+                    <button class="button-recommendation" id="analyze-quality-btn">
+                        <span class="button-icon">🔍</span>
+                        <span class="button-text">Analizar Calidad</span>
+                    </button>
+                </div>
+
+                <div class="quality-empty-state" id="quality-empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <h4>No hay análisis de calidad disponible</h4>
+                    <p>Presiona el botón "Analizar Calidad" para comenzar</p>
+                </div>
+
+                <div class="quality-content" id="quality-content" style="display: none;">
+                    <div class="quality-stats">
+                        <div class="stat-card stat-info">
+                            <div class="stat-value" id="quality-score">0</div>
+                            <div class="stat-label">Puntuación de Calidad</div>
+                        </div>
+                        <div class="stat-card stat-warning">
+                            <div class="stat-value" id="improvement-count">0</div>
+                            <div class="stat-label">Oportunidades de Mejora</div>
+                        </div>
+                        <div class="stat-card stat-high">
+                            <div class="stat-value" id="bug-count">0</div>
+                            <div class="stat-label">Posibles Bugs</div>
+                        </div>
+                    </div>
+
+                    <div class="quality-sections">
+                        <div class="quality-section">
+                            <h4>🐛 Posibles Bugs</h4>
+                            <div id="bugs-list" class="quality-list"></div>
+                        </div>
+
+                        <div class="quality-section">
+                            <h4>💡 Oportunidades de Mejora</h4>
+                            <div id="improvements-list" class="quality-list"></div>
+                        </div>
+
+                        <div class="quality-section">
+                            <h4>⚡ Optimizaciones de Rendimiento</h4>
+                            <div id="performance-list" class="quality-list"></div>
+                        </div>
+
+                        <div class="quality-section">
+                            <h4>📝 Mejores Prácticas</h4>
+                            <div id="best-practices-list" class="quality-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2694,6 +2925,21 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             vscode.postMessage({ command: 'generateHTMLReport' });
         }
 
+        function analyzeCodeQuality() {
+            console.log('[Webview] Analyzing code quality...');
+            
+            const analyzeQualityBtn = document.getElementById('analyze-quality-btn');
+            if (analyzeQualityBtn) {
+                analyzeQualityBtn.disabled = true;
+                analyzeQualityBtn.innerHTML = '<span class="button-icon">⏳</span><span class="button-text">Analizando...</span>';
+            }
+            
+            // Request quality analysis from backend
+            vscode.postMessage({ 
+                command: 'analyzeCodeQuality'
+            });
+        }
+
         function regenerateAIReport() {
             // Get current findings from the summary
             const findingsList = document.getElementById('findings-list');
@@ -2870,6 +3116,134 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             messageEl.textContent = message;
             statusDiv.appendChild(messageEl);
             setTimeout(() => messageEl.remove(), 3000);
+        }
+
+        function updateQualityUI(result) {
+            console.log('[Webview] Updating quality UI with result:', result);
+            
+            // Re-enable button
+            const analyzeQualityBtn = document.getElementById('analyze-quality-btn');
+            if (analyzeQualityBtn) {
+                analyzeQualityBtn.disabled = false;
+                analyzeQualityBtn.innerHTML = '<span class="button-icon">🔍</span><span class="button-text">Analizar Calidad</span>';
+            }
+            
+            if (!result || (!result.bugs && !result.improvements && !result.performance && !result.bestPractices)) {
+                showStatusMessage('No se encontraron problemas de calidad', 'success');
+                return;
+            }
+
+            // Hide empty state, show content
+            document.getElementById('quality-empty-state').style.display = 'none';
+            document.getElementById('quality-content').style.display = 'block';
+
+            // Update statistics
+            const bugCount = (result.bugs || []).length;
+            const improvementCount = (result.improvements || []).length;
+            const totalIssues = bugCount + improvementCount + (result.performance || []).length + (result.bestPractices || []).length;
+            const qualityScore = Math.max(0, 100 - (bugCount * 10 + improvementCount * 5));
+            
+            document.getElementById('quality-score').textContent = qualityScore;
+            document.getElementById('improvement-count').textContent = improvementCount;
+            document.getElementById('bug-count').textContent = bugCount;
+
+            // Update bugs list
+            const bugsList = document.getElementById('bugs-list');
+            bugsList.innerHTML = '';
+            if (result.bugs && result.bugs.length > 0) {
+                result.bugs.forEach(bug => {
+                    bugsList.appendChild(createQualityItem(bug));
+                });
+            } else {
+                bugsList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron posibles bugs</p>';
+            }
+
+            // Update improvements list
+            const improvementsList = document.getElementById('improvements-list');
+            improvementsList.innerHTML = '';
+            if (result.improvements && result.improvements.length > 0) {
+                result.improvements.forEach(improvement => {
+                    improvementsList.appendChild(createQualityItem(improvement));
+                });
+            } else {
+                improvementsList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron oportunidades de mejora</p>';
+            }
+
+            // Update performance list
+            const performanceList = document.getElementById('performance-list');
+            performanceList.innerHTML = '';
+            if (result.performance && result.performance.length > 0) {
+                result.performance.forEach(perf => {
+                    performanceList.appendChild(createQualityItem(perf));
+                });
+            } else {
+                performanceList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron problemas de rendimiento</p>';
+            }
+
+            // Update best practices list
+            const bestPracticesList = document.getElementById('best-practices-list');
+            bestPracticesList.innerHTML = '';
+            if (result.bestPractices && result.bestPractices.length > 0) {
+                result.bestPractices.forEach(practice => {
+                    bestPracticesList.appendChild(createQualityItem(practice));
+                });
+            } else {
+                bestPracticesList.innerHTML = '<p style="color: #858585; font-size: 12px;">El código sigue las mejores prácticas</p>';
+            }
+
+            showStatusMessage('Análisis de calidad completado', 'success');
+        }
+
+        function createQualityItem(item) {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'quality-item';
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'quality-item-header';
+
+            const severitySpan = document.createElement('span');
+            severitySpan.className = 'quality-item-severity ' + (item.severity || 'medium');
+            severitySpan.textContent = (item.severity || 'medium').toUpperCase();
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'quality-item-title';
+            titleDiv.textContent = item.title || item.message;
+
+            headerDiv.appendChild(severitySpan);
+            headerDiv.appendChild(titleDiv);
+
+            const descriptionDiv = document.createElement('div');
+            descriptionDiv.className = 'quality-item-description';
+            descriptionDiv.textContent = item.description || item.message;
+
+            itemDiv.appendChild(headerDiv);
+            itemDiv.appendChild(descriptionDiv);
+
+            if (item.file) {
+                const fileSpan = document.createElement('span');
+                fileSpan.className = 'quality-item-file';
+                fileSpan.innerHTML = '📄 ' + item.file + (item.line ? ':' + item.line : '');
+                itemDiv.appendChild(fileSpan);
+            }
+
+            if (item.suggestion) {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'quality-item-suggestion';
+                
+                const suggestionTitle = document.createElement('div');
+                suggestionTitle.className = 'quality-item-suggestion-title';
+                suggestionTitle.textContent = '💡 Sugerencia:';
+                
+                const suggestionText = document.createElement('div');
+                suggestionText.className = 'quality-item-suggestion-text';
+                suggestionText.textContent = item.suggestion;
+                
+                suggestionDiv.appendChild(suggestionTitle);
+                suggestionDiv.appendChild(suggestionText);
+                itemDiv.appendChild(suggestionDiv);
+            }
+
+            return itemDiv;
         }
 
         function initializeDiagramRenderer() {
@@ -3463,6 +3837,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
                     break;
                 case 'updateSecuritySummary':
                     updateSecurityUI(message.summary);
+                    break;
+                case 'qualityAnalysisResult':
+                    updateQualityUI(message.result);
                     break;
                 case 'updateDeepenedExplanation':
                     console.log('[Webview] Received updateDeepenedExplanation:', message.nodeId, 'explanation length:', message.explanation?.length);
@@ -4395,6 +4772,14 @@ export class SidebarPanelManager implements ISidebarPanelManager {
             if (generateReportBtn) {
                 generateReportBtn.addEventListener('click', generateSecurityReport);
                 console.log('[Webview] Added listener to generateReportBtn');
+            }
+
+            // Quality analysis button
+            const analyzeQualityBtn = document.getElementById('analyze-quality-btn');
+            console.log('[Webview] analyzeQualityBtn:', analyzeQualityBtn);
+            if (analyzeQualityBtn) {
+                analyzeQualityBtn.addEventListener('click', analyzeCodeQuality);
+                console.log('[Webview] Added listener to analyzeQualityBtn');
             }
 
             // Context menu items

@@ -8,8 +8,35 @@
     "vscode": "^1.108.1"
   },
   "categories": [
+    "Programming Languages",
+    "Linters",
+    "Visualization",
     "Other"
   ],
+  "keywords": [
+    "code analysis",
+    "architecture",
+    "security",
+    "quality",
+    "ai",
+    "gemini",
+    "diagram",
+    "visualization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hakalab/haka-insight.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hakalab/haka-insight/issues"
+  },
+  "homepage": "https://github.com/hakalab/haka-insight#readme",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0a0e27",
+    "theme": "dark"
+  },
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

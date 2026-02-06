@@ -323,6 +323,28 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	sidebarPanelManager.setOnAnalyzeCodeQualityCallback(async () => {
+		const apiKey = await storageManager.getAPIKey(context);
+		if (!apiKey) {
+			vscode.window.showWarningMessage('Please configure your Gemini API key first.');
+			return { bugs: [], improvements: [], performance: [], bestPractices: [] };
+		}
+
+		const model = await storageManager.getModel(context);
+		const analyzedFiles = analysisCache.getAllAnalyzedFiles();
+		
+		if (analyzedFiles.length === 0) {
+			vscode.window.showWarningMessage('No files analyzed yet. Analyze some files first.');
+			return { bugs: [], improvements: [], performance: [], bestPractices: [] };
+		}
+
+		// Extract file names from analyzed files
+		const fileNames = analyzedFiles.map(f => f.name);
+
+		// Analyze code quality using Gemini
+		return await geminiAPIClient.analyzeCodeQuality(fileNames, apiKey, model as any);
+	});
+
 	sidebarPanelManager.setOnNavigateToDependencyCallback(async (filePath: string) => {
 		await navigateToFile(filePath, context);
 	});
