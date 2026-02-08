@@ -262,6 +262,98 @@ export class DiagramRenderer {
   }
 
   /**
+   * Get file extension from filename
+   */
+  private getFileExtension(filename: string): string {
+    const parts = filename.split('.');
+    if (parts.length > 1) {
+      return parts[parts.length - 1].toUpperCase();
+    }
+    return '';
+  }
+
+  /**
+   * Get color for file extension based on language
+   */
+  private getExtensionColor(extension: string): string {
+    const colors: { [key: string]: string } = {
+      // JavaScript/TypeScript
+      'JS': '#d4b830',
+      'JSX': '#d4b830',
+      'TS': '#2b7489',
+      'TSX': '#2b7489',
+      'MJS': '#d4b830',
+      'CJS': '#d4b830',
+      
+      // Python
+      'PY': '#8c7e3d',
+      'PYW': '#8c7e3d',
+      'PYNB': '#8c7e3d',
+      
+      // Java/Kotlin
+      'JAVA': '#a8503f',
+      'KT': '#7f52b2',
+      'KTS': '#7f52b2',
+      
+      // C/C++/C#
+      'C': '#4e5a8c',
+      'CPP': '#4e5a8c',
+      'CC': '#4e5a8c',
+      'CXX': '#4e5a8c',
+      'H': '#4e5a8c',
+      'HPP': '#4e5a8c',
+      'CS': '#68217a',
+      
+      // Web
+      'HTML': '#c75a3f',
+      'HTM': '#c75a3f',
+      'CSS': '#3d5a99',
+      'SCSS': '#a8507a',
+      'SASS': '#a8507a',
+      'LESS': '#3d5a99',
+      
+      // PHP
+      'PHP': '#6c7eb7',
+      
+      // Ruby
+      'RB': '#8c3d3d',
+      'ERB': '#8c3d3d',
+      
+      // Go
+      'GO': '#5d9fb5',
+      
+      // Rust
+      'RS': '#8c5a3d',
+      
+      // Swift
+      'SWIFT': '#c75a3f',
+      
+      // Shell
+      'SH': '#5a8c5a',
+      'BASH': '#5a8c5a',
+      'ZSH': '#5a8c5a',
+      
+      // Config/Data
+      'JSON': '#8c8c5a',
+      'XML': '#8c6a3d',
+      'YAML': '#8c5a7a',
+      'YML': '#8c5a7a',
+      'TOML': '#5a7a8c',
+      'INI': '#7a7a7a',
+      
+      // Markdown/Docs
+      'MD': '#5a7a8c',
+      'TXT': '#7a7a7a',
+      'RST': '#5a7a8c',
+      
+      // Default
+      'DEFAULT': '#6a6a6a'
+    };
+    
+    return colors[extension] || colors['DEFAULT'];
+  }
+
+  /**
    * Draw nodes (files/modules)
    */
   private drawNodes(): void {
@@ -294,6 +386,27 @@ export class DiagramRenderer {
       this.ctx.fillStyle = '#858585';
       this.ctx.font = `${10 * this.zoomLevel}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto`;
       this.ctx.fillText(node.type, x, y + 15);
+      
+      // Draw file extension badge in bottom-right corner
+      const extension = this.getFileExtension(node.label);
+      if (extension) {
+        const badgeWidth = 32;
+        const badgeHeight = 16;
+        const badgeX = x + width / 2 - badgeWidth - 4;
+        const badgeY = y + height / 2 - badgeHeight - 4;
+        
+        // Draw badge background
+        const extensionColor = this.getExtensionColor(extension);
+        this.ctx.fillStyle = extensionColor;
+        this.ctx.fillRect(badgeX, badgeY, badgeWidth, badgeHeight);
+        
+        // Draw badge text
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = `${8 * this.zoomLevel}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto`;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(extension, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
+      }
     }
   }
 

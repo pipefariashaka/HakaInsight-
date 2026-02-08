@@ -61,4 +61,11 @@ export class AnalysisCache {
   clearAll(): void {
     this.cache.clear();
   }
+
+  /**
+   * Clear all analyses (alias for clearAll)
+   */
+  clear(): void {
+    this.clearAll();
+  }
 }

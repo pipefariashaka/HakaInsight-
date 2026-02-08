@@ -13,6 +13,8 @@ const vscode = acquireVsCodeApi();
         let analysisDataMap = new Map(); // Store analysis data for each file
         let savePositionsTimeout = null; // Timeout for debounced position saving
         
+        let emptyStateTimeout = null; // Timeout for showing empty state
+        
         // Debounce function
         function debounce(func, wait) {
             return function executedFunction(...args) {
@@ -158,6 +160,7 @@ const vscode = acquireVsCodeApi();
                 modelHelp: 'Flash is faster and cheaper, Pro provides more detailed analysis',
                 updateDiagram: 'Update Diagram',
                 loadingDiagramInfo: 'Loading information, please wait...',
+                noDiagramYet: 'To view the diagram, right-click on any file in your project and select "Analyze with Haka Insight"',
                 
                 // Security tab
                 noSecurityAnalysis: 'No Security Analysis Available',
@@ -286,6 +289,7 @@ const vscode = acquireVsCodeApi();
                 modelHelp: 'Flash es más rápido y económico, Pro proporciona análisis más detallado',
                 updateDiagram: 'Actualizar Diagrama',
                 loadingDiagramInfo: 'Cargando información, por favor espera...',
+                noDiagramYet: 'Para ver el diagrama, haz clic derecho sobre algún archivo de tu proyecto y selecciona "Analyze with Haka Insight"',
                 
                 // Security tab
                 noSecurityAnalysis: 'No Hay Análisis de Seguridad Disponible',
@@ -484,8 +488,13 @@ const vscode = acquireVsCodeApi();
             const regenerateBtnText = document.querySelector('.button-regenerate .button-text');
             if (regenerateBtnText) regenerateBtnText.textContent = t('regenerate');
             
-            const loadingText = document.querySelector('.loading-text');
-            if (loadingText) loadingText.textContent = t('generatingAISummary');
+            // Update loading text for diagram (specific selector)
+            const diagramLoadingText = document.querySelector('#diagram-loading .loading-text');
+            if (diagramLoadingText) diagramLoadingText.textContent = t('loadingDiagramInfo');
+            
+            // Update loading text for AI report (specific selector)
+            const aiLoadingText = document.querySelector('#ai-report-loading .loading-text');
+            if (aiLoadingText) aiLoadingText.textContent = t('generatingAISummary');
         }
         
         // Load saved language
@@ -582,6 +591,20 @@ const vscode = acquireVsCodeApi();
             const loader = document.getElementById('diagram-loading');
             if (loader) {
                 loader.classList.remove('visible');
+            }
+        }
+
+        function showEmptyState() {
+            const emptyState = document.getElementById('diagram-empty-state');
+            if (emptyState) {
+                emptyState.classList.add('visible');
+            }
+        }
+
+        function hideEmptyState() {
+            const emptyState = document.getElementById('diagram-empty-state');
+            if (emptyState) {
+                emptyState.classList.remove('visible');
             }
         }
 
@@ -1160,7 +1183,7 @@ const vscode = acquireVsCodeApi();
                     // Helper function to get connection point on a node
                     const getConnectionPoint = (node, side) => {
                         const nodeWidth = 120;
-                        const nodeHeight = 60;
+                        const nodeHeight = 45;
                         switch(side) {
                             case 'top':
                                 return { x: node.x + nodeWidth / 2, y: node.y };
@@ -1265,7 +1288,7 @@ const vscode = acquireVsCodeApi();
                         rect.setAttribute('x', node.x);
                         rect.setAttribute('y', node.y);
                         rect.setAttribute('width', '120');
-                        rect.setAttribute('height', '60');
+                        rect.setAttribute('height', '45');
                         rect.setAttribute('fill', fillColor);
                         rect.setAttribute('stroke', strokeColor);
                         rect.setAttribute('stroke-width', isCurrentFile ? '3' : (isAnalyzed ? '2' : '2'));
@@ -1280,8 +1303,9 @@ const vscode = acquireVsCodeApi();
                         // Label
                         const text = document.createElementNS(svgNS, 'text');
                         text.setAttribute('x', node.x + 60);
-                        text.setAttribute('y', node.y + 22);
+                        text.setAttribute('y', node.y + 27);
                         text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('dominant-baseline', 'middle');
                         text.setAttribute('fill', textColor);
                         text.setAttribute('font-size', '11');
                         text.setAttribute('font-weight', 'bold');
@@ -1289,9 +1313,128 @@ const vscode = acquireVsCodeApi();
                         const label = node.label.length > 14 ? node.label.substring(0, 12) + '...' : node.label;
                         text.textContent = label;
                         g.appendChild(text);
+                        
+                        // File extension badge in bottom-right corner
+                        const extension = this.getFileExtension(node.label);
+                        if (extension) {
+                            const badgeWidth = 28;
+                            const badgeHeight = 14;
+                            const badgeX = node.x + 120 - badgeWidth - 3;
+                            const badgeY = node.y + 45 - badgeHeight - 3;
+                            
+                            // Badge background
+                            const badge = document.createElementNS(svgNS, 'rect');
+                            badge.setAttribute('x', badgeX);
+                            badge.setAttribute('y', badgeY);
+                            badge.setAttribute('width', badgeWidth);
+                            badge.setAttribute('height', badgeHeight);
+                            badge.setAttribute('fill', this.getExtensionColor(extension));
+                            badge.setAttribute('rx', '2');
+                            badge.setAttribute('pointer-events', 'none');
+                            g.appendChild(badge);
+                            
+                            // Badge text
+                            const badgeText = document.createElementNS(svgNS, 'text');
+                            badgeText.setAttribute('x', badgeX + badgeWidth / 2);
+                            badgeText.setAttribute('y', badgeY + badgeHeight / 2);
+                            badgeText.setAttribute('text-anchor', 'middle');
+                            badgeText.setAttribute('dominant-baseline', 'middle');
+                            badgeText.setAttribute('fill', '#ffffff');
+                            badgeText.setAttribute('font-size', '8');
+                            badgeText.setAttribute('font-weight', '600');
+                            badgeText.setAttribute('pointer-events', 'none');
+                            badgeText.textContent = extension;
+                            g.appendChild(badgeText);
+                        }
                     }
                     
                     this.svg.appendChild(g);
+                },
+
+                getFileExtension: function(filename) {
+                    const parts = filename.split('.');
+                    if (parts.length > 1) {
+                        return parts[parts.length - 1].toUpperCase();
+                    }
+                    return '';
+                },
+
+                getExtensionColor: function(extension) {
+                    const colors = {
+                        // JavaScript/TypeScript
+                        'JS': '#d4b830',
+                        'JSX': '#d4b830',
+                        'TS': '#2b7489',
+                        'TSX': '#2b7489',
+                        'MJS': '#d4b830',
+                        'CJS': '#d4b830',
+                        
+                        // Python
+                        'PY': '#8c7e3d',
+                        'PYW': '#8c7e3d',
+                        'PYNB': '#8c7e3d',
+                        
+                        // Java/Kotlin
+                        'JAVA': '#a8503f',
+                        'KT': '#7f52b2',
+                        'KTS': '#7f52b2',
+                        
+                        // C/C++/C#
+                        'C': '#4e5a8c',
+                        'CPP': '#4e5a8c',
+                        'CC': '#4e5a8c',
+                        'CXX': '#4e5a8c',
+                        'H': '#4e5a8c',
+                        'HPP': '#4e5a8c',
+                        'CS': '#68217a',
+                        
+                        // Web
+                        'HTML': '#c75a3f',
+                        'HTM': '#c75a3f',
+                        'CSS': '#3d5a99',
+                        'SCSS': '#a8507a',
+                        'SASS': '#a8507a',
+                        'LESS': '#3d5a99',
+                        
+                        // PHP
+                        'PHP': '#6c7eb7',
+                        
+                        // Ruby
+                        'RB': '#8c3d3d',
+                        'ERB': '#8c3d3d',
+                        
+                        // Go
+                        'GO': '#5d9fb5',
+                        
+                        // Rust
+                        'RS': '#8c5a3d',
+                        
+                        // Swift
+                        'SWIFT': '#c75a3f',
+                        
+                        // Shell
+                        'SH': '#5a8c5a',
+                        'BASH': '#5a8c5a',
+                        'ZSH': '#5a8c5a',
+                        
+                        // Config/Data
+                        'JSON': '#8c8c5a',
+                        'XML': '#8c6a3d',
+                        'YAML': '#8c5a7a',
+                        'YML': '#8c5a7a',
+                        'TOML': '#5a7a8c',
+                        'INI': '#7a7a7a',
+                        
+                        // Markdown/Docs
+                        'MD': '#5a7a8c',
+                        'TXT': '#7a7a7a',
+                        'RST': '#5a7a8c',
+                        
+                        // Default
+                        'DEFAULT': '#6a6a6a'
+                    };
+                    
+                    return colors[extension] || colors['DEFAULT'];
                 },
 
                 organizeLayers: function(width, height) {
@@ -1534,8 +1677,37 @@ const vscode = acquireVsCodeApi();
             const message = event.data;
             console.log('[Webview] Message received:', message.command, message);
             switch (message.command) {
+                case 'diagramLoading':
+                    console.log('[Webview] diagramLoading received, hasDiagram:', message.hasDiagram);
+                    
+                    // Clear any existing diagram data
+                    currentDiagramData = null;
+                    if (diagramRenderer) {
+                        diagramRenderer.nodes.clear();
+                        diagramRenderer.edges = [];
+                        const svg = document.getElementById('diagram-svg');
+                        if (svg) {
+                            svg.innerHTML = '';
+                        }
+                    }
+                    
+                    // Clear analysis data maps
+                    analysisDataMap.clear();
+                    fileVisibilityMap.clear();
+                    
+                    if (message.hasDiagram) {
+                        // Diagram exists, show loading indicator
+                        hideEmptyState();
+                        showDiagramLoader();
+                    } else {
+                        // No diagram, show empty state
+                        hideDiagramLoader();
+                        showEmptyState();
+                    }
+                    break;
                 case 'updateDiagram':
-                    // Show loading indicator
+                    // Hide empty state and show loading indicator
+                    hideEmptyState();
                     showDiagramLoader();
                     
                     currentDiagramData = message.data;
@@ -1553,15 +1725,25 @@ const vscode = acquireVsCodeApi();
                         updateAnalyzedFilesList(message.analyzedFiles);
                     }
                     
-                    if (!diagramRenderer) {
-                        initializeDiagramRenderer();
-                    }
-                    if (diagramRenderer && currentDiagramData) {
-                        diagramRenderer.render(currentDiagramData);
-                    }
-                    
-                    // Hide loading indicator
-                    hideDiagramLoader();
+                    // Add a minimum delay to ensure loading indicator is visible
+                    setTimeout(() => {
+                        if (!diagramRenderer) {
+                            initializeDiagramRenderer();
+                        }
+                        
+                        // Check if we have diagram data and nodes
+                        if (diagramRenderer && currentDiagramData && currentDiagramData.nodes && currentDiagramData.nodes.length > 0) {
+                            diagramRenderer.render(currentDiagramData);
+                        } else {
+                            // No diagram or no nodes, show empty state
+                            showEmptyState();
+                        }
+                        
+                        // Hide loading indicator
+                        hideDiagramLoader();
+                        
+                        showStatusMessage(t('analysisComplete'), 'success');
+                    }, 300); // Minimum 300ms to show loading indicator
                     
                     // Don't show explanation and warnings in the side view
                     // Users can see this information in the details panel when clicking on nodes
@@ -1569,11 +1751,32 @@ const vscode = acquireVsCodeApi();
                     //     displayExplanation(message.analysisResult);
                     //     displayWarnings(message.analysisResult);
                     // }
-                    showStatusMessage(t('analysisComplete'), 'success');
                     break;
                 case 'updateDiagramWithCache':
-                    // Show loading indicator
-                    showDiagramLoader();
+                    console.log('[Webview] updateDiagramWithCache received:', message);
+                    console.log('[Webview] message.data:', message.data);
+                    console.log('[Webview] message.data.nodes:', message.data?.nodes);
+                    console.log('[Webview] message.data.nodes.length:', message.data?.nodes?.length);
+                    
+                    // Check if there's actually data to load
+                    const hasData = message.data && message.data.nodes && message.data.nodes.length > 0;
+                    console.log('[Webview] hasData:', hasData);
+                    
+                    // Always hide empty state when we receive this message
+                    hideEmptyState();
+                    
+                    if (hasData) {
+                        // Show loading indicator if not already visible
+                        const loader = document.getElementById('diagram-loading');
+                        if (!loader || !loader.classList.contains('visible')) {
+                            console.log('[Webview] Showing loader');
+                            showDiagramLoader();
+                        } else {
+                            console.log('[Webview] Loader already visible');
+                        }
+                    } else {
+                        console.log('[Webview] No data, will show empty state after processing');
+                    }
                     
                     currentDiagramData = message.data;
                     
@@ -1594,15 +1797,26 @@ const vscode = acquireVsCodeApi();
                         updateAnalyzedFilesList(message.analyzedFiles);
                     }
                     
-                    if (!diagramRenderer) {
-                        initializeDiagramRenderer();
-                    }
-                    if (diagramRenderer && currentDiagramData) {
-                        diagramRenderer.render(currentDiagramData);
-                    }
-                    
-                    // Hide loading indicator
-                    hideDiagramLoader();
+                    // Add a minimum delay to ensure loading indicator is visible when there's data
+                    const processDelay = hasData ? 300 : 0;
+                    setTimeout(() => {
+                        if (!diagramRenderer) {
+                            initializeDiagramRenderer();
+                        }
+                        
+                        // Check if we have diagram data and nodes
+                        if (diagramRenderer && currentDiagramData && currentDiagramData.nodes && currentDiagramData.nodes.length > 0) {
+                            console.log('[Webview] Rendering diagram with', currentDiagramData.nodes.length, 'nodes');
+                            diagramRenderer.render(currentDiagramData);
+                        } else {
+                            // No diagram or no nodes, show empty state
+                            console.log('[Webview] No diagram to render, showing empty state');
+                            showEmptyState();
+                        }
+                        
+                        // Hide loading indicator
+                        hideDiagramLoader();
+                    }, processDelay);
                     break;
                 case 'showWarning':
                     showStatusMessage(message.message, 'warning');
@@ -2254,7 +2468,7 @@ const vscode = acquireVsCodeApi();
                     minX = Math.min(minX, node.x);
                     minY = Math.min(minY, node.y);
                     maxX = Math.max(maxX, node.x + 120); // node width
-                    maxY = Math.max(maxY, node.y + 60);  // node height
+                    maxY = Math.max(maxY, node.y + 45);  // node height
                 });
             }
             
@@ -2320,7 +2534,7 @@ const vscode = acquireVsCodeApi();
                     minX = Math.min(minX, node.x);
                     minY = Math.min(minY, node.y);
                     maxX = Math.max(maxX, node.x + 120); // node width
-                    maxY = Math.max(maxY, node.y + 60);  // node height
+                    maxY = Math.max(maxY, node.y + 45);  // node height
                 });
             }
             
@@ -2463,8 +2677,7 @@ const vscode = acquireVsCodeApi();
         window.addEventListener('load', () => {
             console.log('[Webview] Window load event fired');
             
-            // Show loading indicator initially
-            showDiagramLoader();
+            // Don't show anything initially, wait for backend to tell us if diagram exists
             
             initializeDiagramRenderer();
             updateUILanguage();

@@ -389,7 +389,7 @@
             padding: 30px 20px;
             gap: 12px;
         }
-        .loading-spinner {
+        .ai-report-loading .loading-spinner {
             width: 28px;
             height: 28px;
             border: 3px solid rgba(26, 58, 82, 0.3);
@@ -400,7 +400,7 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .loading-text {
+        .ai-report-loading .loading-text {
             font-size: 11px;
             color: #7db8e9;
         }

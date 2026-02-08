@@ -15,6 +15,7 @@ export interface Translations {
     analyzing: string;
     loadingDiagram: string;
     loadingDiagramInfo: string;
+    noDiagramYet: string;
     
     // API Key messages
     apiKeyNotConfigured: string;
@@ -132,6 +133,7 @@ const translations: Record<Language, Translations> = {
         analyzing: 'Analyzing...',
         loadingDiagram: 'Loading diagram...',
         loadingDiagramInfo: 'Loading information, please wait...',
+        noDiagramYet: 'To view the diagram, right-click on any file in your project and select "Analyze with Haka Insight"',
         
         // API Key messages
         apiKeyNotConfigured: 'API Key not configured. Please set your Gemini API Key in the Settings tab.',
@@ -247,6 +249,7 @@ const translations: Record<Language, Translations> = {
         analyzing: 'Analizando...',
         loadingDiagram: 'Cargando diagrama...',
         loadingDiagramInfo: 'Cargando información, por favor espera...',
+        noDiagramYet: 'Para ver el diagrama, haz clic derecho sobre algún archivo de tu proyecto y selecciona "Analyze with Haka Insight"',
         
         // API Key messages
         apiKeyNotConfigured: 'Clave API no configurada. Por favor configure su clave API de Gemini en la pestaña de Configuración.',

@@ -17,6 +17,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
   private globalState: vscode.Memento | undefined;
   private context: vscode.ExtensionContext | undefined;
   private templateLoader: TemplateLoader | undefined;
+  private currentWorkspacePath: string | undefined; // Track current workspace
   private onSaveAPIKeyCallback?: (apiKey: string) => Promise<void>;
   private onClearAPIKeyCallback?: (() => Promise<void>) | undefined;
   private onValidateAPIKeyCallback?: (apiKey: string) => Promise<{ valid: boolean; message: string }>;
@@ -38,7 +39,21 @@ export class SidebarPanelManager implements ISidebarPanelManager {
   private onSaveDiagramPositionsCallback?: (positions: any) => Promise<void>;
   private messageDisposable: vscode.Disposable | undefined;
 
-  createPanel(context: vscode.ExtensionContext, analysisCache?: any): void {
+  createPanel(context: vscode.ExtensionContext, analysisCache?: any, forceRecreate: boolean = false): void {
+    // Check if workspace has changed
+    const currentWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceChanged = this.currentWorkspacePath && currentWorkspace !== this.currentWorkspacePath;
+    
+    // If workspace changed or forceRecreate is true, dispose the existing panel first
+    if ((workspaceChanged || forceRecreate) && this.panel) {
+      console.log('[SidebarPanelManager] Workspace changed or force recreate, disposing panel');
+      this.panel.dispose();
+      this.panel = undefined;
+    }
+    
+    // Update current workspace path
+    this.currentWorkspacePath = currentWorkspace;
+    
     if (this.panel) {
       this.panel.reveal();
       return;
@@ -55,7 +70,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
       {
         enableScripts: true,
         localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, 'media'))],
-        retainContextWhenHidden: true,
+        retainContextWhenHidden: false, // Changed to false to prevent state persistence between workspaces
       }
     );
 
@@ -84,6 +99,12 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         command: 'switchTab',
         tab: tabName,
       });
+    }
+  }
+
+  sendMessage(message: any): void {
+    if (this.panel) {
+      this.panel.webview.postMessage(message);
     }
   }
 
@@ -638,10 +659,14 @@ export class SidebarPanelManager implements ISidebarPanelManager {
       const securityTab = this.templateLoader.loadTemplate('security-tab.html');
       const qualityTab = this.templateLoader.loadTemplate('quality-tab.html');
 
+      // Get workspace identifier to prevent caching between different workspaces
+      const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || 'no-workspace';
+      const workspaceHash = Buffer.from(workspaceId).toString('base64').substring(0, 16);
+
       // Load main template and replace placeholders
       const html = this.templateLoader.loadTemplateWithReplacements('main.html', {
         'STYLES': styles,
-        'SCRIPTS': `<!-- Build: ${Date.now()} -->\n${scripts}`,
+        'SCRIPTS': `<!-- Workspace: ${workspaceHash} | Build: ${Date.now()} -->\n${scripts}`,
         'MODALS': modals,
         'TABS': tabs,
         'DIAGRAM_TAB': diagramTab,

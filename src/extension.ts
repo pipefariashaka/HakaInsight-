@@ -78,34 +78,58 @@ export function activate(context: vscode.ExtensionContext) {
 	qualityAnalysisManager = new QualityAnalysisManager();
 	reportGenerator = new ReportGenerator();
 
-	// Load cached analyses from previous sessions
-	loadAnalysisCache(context).then(cachedData => {
-		if (cachedData && cachedData.analyses.length > 0) {
-			console.log(`Restoring ${cachedData.analyses.length} cached analyses...`);
+	// DON'T load cache automatically here - it will be loaded when panel opens
+	// This prevents mixing data from different projects
+	console.log('[Extension] Extension activated, cache will be loaded when panel opens');
+
+	// Listen for workspace folder changes to reload cache
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeWorkspaceFolders(async (event) => {
+			console.log('[Extension] Workspace folders changed, reloading cache...');
 			
-			// Restore analyses to AnalysisCache
-			cachedData.analyses.forEach(([filePath, cachedAnalysis]) => {
-				analysisCache.saveAnalysis(filePath, cachedAnalysis.analysisResult);
-			});
-
-			// Restore security findings if available using the new restoreFromCache method
-			if (cachedData.securityFindings) {
-				securityAnalysisManager.restoreFromCache({
-					findings: cachedData.securityFindings.findings,
-					analyzedFiles: cachedData.securityFindings.analyzedFiles
+			// Clear current in-memory cache
+			analysisCache.clear();
+			securityAnalysisManager.clear();
+			qualityAnalysisManager.clear();
+			
+			// Load cache for new workspace
+			const cachedData = await loadAnalysisCache(context);
+			if (cachedData && cachedData.analyses.length > 0) {
+				console.log(`Restoring ${cachedData.analyses.length} cached analyses for new workspace...`);
+				
+				// Restore analyses
+				cachedData.analyses.forEach(([filePath, cachedAnalysis]) => {
+					analysisCache.saveAnalysis(filePath, cachedAnalysis.analysisResult);
 				});
+				
+				// Restore security findings
+				if (cachedData.securityFindings) {
+					securityAnalysisManager.restoreFromCache({
+						findings: cachedData.securityFindings.findings,
+						analyzedFiles: cachedData.securityFindings.analyzedFiles
+					});
+				}
+				
+				// Restore quality findings
+				if (cachedData.qualityFindings) {
+					qualityAnalysisManager.restoreFromCache(cachedData.qualityFindings);
+				}
+				
+				console.log('Cache restored for new workspace');
+			} else {
+				console.log('No cache found for new workspace');
 			}
-
-			// Restore quality findings if available
-			if (cachedData.qualityFindings) {
-				qualityAnalysisManager.restoreFromCache(cachedData.qualityFindings);
+			
+			// Refresh the diagram if panel is open
+			if (sidebarPanelManager) {
+				const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
+				if (allAnalyzedFiles.length > 0) {
+					const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, new Map(), 'auto');
+					sidebarPanelManager.updateDiagramWithCache(comprehensiveDiagram, allAnalyzedFiles, new Map());
+				}
 			}
-
-			console.log('Cache restored successfully');
-		}
-	}).catch(error => {
-		console.error('Error loading cache:', error);
-	});
+		})
+	);
 
 	// Register the tree data provider for the sidebar view
 	const treeDataProvider = new ArchitectureTreeDataProvider();
@@ -120,8 +144,42 @@ export function activate(context: vscode.ExtensionContext) {
 			// Always open the diagram panel when the sidebar becomes visible
 			// Small delay to ensure the view is fully loaded
 			setTimeout(async () => {
-				// Open the diagram panel
-				sidebarPanelManager.createPanel(context, analysisCache);
+				// Load cache for this workspace FIRST
+				console.log('[Extension] Loading cache for workspace...');
+				const cachedData = await loadAnalysisCache(context);
+				if (cachedData && cachedData.analyses.length > 0) {
+					console.log(`[Extension] Restoring ${cachedData.analyses.length} cached analyses...`);
+					
+					// Clear any existing data first
+					analysisCache.clear();
+					securityAnalysisManager.clear();
+					qualityAnalysisManager.clear();
+					
+					// Restore analyses
+					cachedData.analyses.forEach(([filePath, cachedAnalysis]) => {
+						analysisCache.saveAnalysis(filePath, cachedAnalysis.analysisResult);
+					});
+					
+					// Restore security findings
+					if (cachedData.securityFindings) {
+						securityAnalysisManager.restoreFromCache({
+							findings: cachedData.securityFindings.findings,
+							analyzedFiles: cachedData.securityFindings.analyzedFiles
+						});
+					}
+					
+					// Restore quality findings
+					if (cachedData.qualityFindings) {
+						qualityAnalysisManager.restoreFromCache(cachedData.qualityFindings);
+					}
+					
+					console.log('[Extension] Cache restored successfully');
+				} else {
+					console.log('[Extension] No cache found for this workspace');
+				}
+				
+				// Open the diagram panel (force recreate to clear old state)
+				sidebarPanelManager.createPanel(context, analysisCache, true);
 				
 				// Load and send selected model to webview
 				const model = await storageManager.getModel(context);
@@ -130,6 +188,9 @@ export function activate(context: vscode.ExtensionContext) {
 				// Load and display the saved diagram automatically
 				const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
 				if (allAnalyzedFiles.length > 0) {
+					// Notify frontend that diagram exists and is loading
+					sidebarPanelManager.sendMessage({ command: 'diagramLoading', hasDiagram: true });
+					
 					// Get effective layout mode (with fallback if no API key)
 					const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
 					
@@ -175,6 +236,15 @@ export function activate(context: vscode.ExtensionContext) {
 					if (securitySummary.totalFindings > 0) {
 						sidebarPanelManager.updateSecuritySummary(securitySummary);
 					}
+					
+					// Update quality summary from restored cache
+					const qualitySummary = qualityAnalysisManager.getSummary();
+					if (qualitySummary.totalIssues > 0) {
+						sidebarPanelManager.updateQualitySummary(qualitySummary);
+					}
+				} else {
+					// No diagram exists, notify frontend
+					sidebarPanelManager.sendMessage({ command: 'diagramLoading', hasDiagram: false });
 				}
 			}, 100);
 		}
@@ -1666,7 +1736,7 @@ async function saveAnalysisCache(context: vscode.ExtensionContext): Promise<void
 	try {
 		// Check if workspace is open
 		if (!vscode.workspace.workspaceFolders) {
-			console.log('No workspace folder open, skipping cache save');
+			console.log('[saveAnalysisCache] No workspace folder open, skipping cache save');
 			return;
 		}
 
@@ -1706,15 +1776,22 @@ async function saveAnalysisCache(context: vscode.ExtensionContext): Promise<void
 			qualityFindings: qualityFindings
 		};
 
-		// Save to JSON file in workspace storage directory
-		const workspaceFolder = vscode.workspace.workspaceFolders[0];
-		const workspaceHash = Buffer.from(workspaceFolder.uri.fsPath).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
-		const cacheFileName = `cache_${workspaceHash}.json`;
-		const cacheFilePath = path.join(context.globalStorageUri.fsPath, cacheFileName);
+		// Use workspace-specific storage (storageUri) instead of global storage
+		// This ensures each workspace has completely isolated cache
+		if (!context.storageUri) {
+			console.log('[saveAnalysisCache] No storage URI available');
+			return;
+		}
+
+		const cacheFilePath = path.join(context.storageUri.fsPath, 'analysis-cache.json');
+		
+		console.log('[saveAnalysisCache] Workspace:', vscode.workspace.workspaceFolders[0].uri.fsPath);
+		console.log('[saveAnalysisCache] Storage path:', cacheFilePath);
+		console.log('[saveAnalysisCache] Analyses count:', analyses.length);
 		
 		// Ensure directory exists
 		try {
-			await vscode.workspace.fs.createDirectory(context.globalStorageUri);
+			await vscode.workspace.fs.createDirectory(context.storageUri);
 		} catch (error) {
 			// Directory might already exist, ignore error
 		}
@@ -1726,7 +1803,7 @@ async function saveAnalysisCache(context: vscode.ExtensionContext): Promise<void
 			Buffer.from(cacheJson, 'utf8')
 		);
 		
-		console.log(`Analysis cache saved to file: ${cacheFilePath} (${analyses.length} files)`);
+		console.log(`[saveAnalysisCache] Analysis cache saved to file: ${cacheFilePath} (${analyses.length} files)`);
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		console.error('Failed to save analysis cache:', error);
@@ -1752,15 +1829,20 @@ async function loadAnalysisCache(context: vscode.ExtensionContext): Promise<Anal
 	try {
 		// Check if workspace is open
 		if (!vscode.workspace.workspaceFolders) {
-			console.log('No workspace folder open, cache disabled');
+			console.log('[loadAnalysisCache] No workspace folder open, cache disabled');
 			return null;
 		}
 
-		// Generate cache file name based on workspace path
-		const workspaceFolder = vscode.workspace.workspaceFolders[0];
-		const workspaceHash = Buffer.from(workspaceFolder.uri.fsPath).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
-		const cacheFileName = `cache_${workspaceHash}.json`;
-		const cacheFilePath = path.join(context.globalStorageUri.fsPath, cacheFileName);
+		// Use workspace-specific storage (storageUri) instead of global storage
+		if (!context.storageUri) {
+			console.log('[loadAnalysisCache] No storage URI available');
+			return null;
+		}
+
+		const cacheFilePath = path.join(context.storageUri.fsPath, 'analysis-cache.json');
+
+		console.log('[loadAnalysisCache] Workspace:', vscode.workspace.workspaceFolders[0].uri.fsPath);
+		console.log('[loadAnalysisCache] Storage path:', cacheFilePath);
 
 		// Check if cache file exists
 		try {
@@ -1770,25 +1852,25 @@ async function loadAnalysisCache(context: vscode.ExtensionContext): Promise<Anal
 
 			// Validate cache structure
 			if (!cached.version || !Array.isArray(cached.analyses)) {
-				console.warn('Invalid cache structure, ignoring');
+				console.warn('[loadAnalysisCache] Invalid cache structure, ignoring');
 				return null;
 			}
 
 			// Check version compatibility
 			if (cached.version !== CACHE_VERSION) {
-				console.warn(`Cache version mismatch (${cached.version} vs ${CACHE_VERSION}), ignoring`);
+				console.warn(`[loadAnalysisCache] Cache version mismatch (${cached.version} vs ${CACHE_VERSION}), ignoring`);
 				return null;
 			}
 
-			console.log(`Analysis cache loaded from file: ${cacheFilePath} (${cached.analyses.length} files)`);
+			console.log(`[loadAnalysisCache] Analysis cache loaded from file: ${cacheFilePath} (${cached.analyses.length} files)`);
 			return cached;
 		} catch (error) {
 			// File doesn't exist or can't be read
-			console.log('No analysis cache file found for this workspace');
+			console.log('[loadAnalysisCache] No analysis cache file found for this workspace');
 			return null;
 		}
 	} catch (error) {
-		console.error('Failed to load analysis cache:', error);
+		console.error('[loadAnalysisCache] Failed to load analysis cache:', error);
 		return null;
 	}
 }
@@ -1800,32 +1882,34 @@ async function clearAnalysisCache(context: vscode.ExtensionContext): Promise<voi
 	try {
 		// Check if workspace is open
 		if (!vscode.workspace.workspaceFolders) {
-			console.log('No workspace folder open');
+			console.log('[clearAnalysisCache] No workspace folder open');
 			return;
 		}
 
-		// Generate cache file name based on workspace path
-		const workspaceFolder = vscode.workspace.workspaceFolders[0];
-		const workspaceHash = Buffer.from(workspaceFolder.uri.fsPath).toString('base64').replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
-		const cacheFileName = `cache_${workspaceHash}.json`;
-		const cacheFilePath = path.join(context.globalStorageUri.fsPath, cacheFileName);
+		// Use workspace-specific storage
+		if (!context.storageUri) {
+			console.log('[clearAnalysisCache] No storage URI available');
+			return;
+		}
+
+		const cacheFilePath = path.join(context.storageUri.fsPath, 'analysis-cache.json');
 
 		// Delete cache file if it exists
 		try {
 			await vscode.workspace.fs.delete(vscode.Uri.file(cacheFilePath));
-			console.log(`Analysis cache file deleted: ${cacheFilePath}`);
+			console.log(`[clearAnalysisCache] Analysis cache file deleted: ${cacheFilePath}`);
 		} catch (error) {
 			// File might not exist, ignore error
-			console.log('No cache file to delete');
+			console.log('[clearAnalysisCache] No cache file to delete');
 		}
 
 		// Also clear old workspace state (for migration)
 		await context.workspaceState.update(CACHE_KEY, undefined);
 		await context.workspaceState.update(SECURITY_CACHE_KEY, undefined);
 		
-		console.log('Analysis cache cleared for this workspace');
+		console.log('[clearAnalysisCache] Analysis cache cleared for this workspace');
 	} catch (error) {
-		console.error('Failed to clear analysis cache:', error);
+		console.error('[clearAnalysisCache] Failed to clear analysis cache:', error);
 	}
 }
 
