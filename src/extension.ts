@@ -9,19 +9,25 @@ import { SidebarPanelManager } from './extension/SidebarPanelManager';
 import { ContextMenuHandler } from './extension/ContextMenuHandler';
 import { ArchitectureTreeDataProvider } from './extension/TreeDataProvider';
 import { AnalysisCache } from './extension/AnalysisCache';
+import { CodeNavigationHandler } from './extension/CodeNavigationHandler';
 import { StorageManager } from './services/StorageManager';
 import { GeminiAPIClient } from './services/GeminiAPIClient';
 import { PersistenceManager } from './services/PersistenceManager';
 import { SecurityAnalysisManager } from './services/SecurityAnalysisManager';
+import { QualityAnalysisManager } from './services/QualityAnalysisManager';
+import { ReportGenerator } from './services/ReportGenerator';
 import { t, getCurrentLanguage } from './i18n/translations';
 
 let sidebarPanelManager: SidebarPanelManager;
 let contextMenuHandler: ContextMenuHandler;
+let codeNavigationHandler: CodeNavigationHandler;
 let storageManager: StorageManager;
 let geminiAPIClient: GeminiAPIClient;
 let persistenceManager: PersistenceManager;
 let analysisCache: AnalysisCache;
 let securityAnalysisManager: SecurityAnalysisManager;
+let qualityAnalysisManager: QualityAnalysisManager;
+let reportGenerator: ReportGenerator;
 let fileVisibilityMap: Map<string, boolean> = new Map();
 
 // Cache storage keys
@@ -44,6 +50,13 @@ interface AnalysisCacheData {
 		findings: any[];
 		analyzedFiles: string[];
 	};
+	qualityFindings?: {
+		bugs: any[];
+		improvements: any[];
+		performance: any[];
+		bestPractices: any[];
+		analyzedFiles: string[];
+	};
 }
 
 /**
@@ -58,9 +71,12 @@ export function activate(context: vscode.ExtensionContext) {
 	geminiAPIClient = new GeminiAPIClient();
 	sidebarPanelManager = new SidebarPanelManager();
 	contextMenuHandler = new ContextMenuHandler();
+	codeNavigationHandler = new CodeNavigationHandler(context);
 	persistenceManager = new PersistenceManager(storageManager);
 	analysisCache = new AnalysisCache(context);
 	securityAnalysisManager = new SecurityAnalysisManager();
+	qualityAnalysisManager = new QualityAnalysisManager();
+	reportGenerator = new ReportGenerator();
 
 	// Load cached analyses from previous sessions
 	loadAnalysisCache(context).then(cachedData => {
@@ -78,6 +94,11 @@ export function activate(context: vscode.ExtensionContext) {
 					findings: cachedData.securityFindings.findings,
 					analyzedFiles: cachedData.securityFindings.analyzedFiles
 				});
+			}
+
+			// Restore quality findings if available
+			if (cachedData.qualityFindings) {
+				qualityAnalysisManager.restoreFromCache(cachedData.qualityFindings);
 			}
 
 			console.log('Cache restored successfully');
@@ -113,7 +134,29 @@ export function activate(context: vscode.ExtensionContext) {
 					const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
 					
 					// Build diagram from cache with current visibility settings
-					const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+					let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+					
+					// If AI mode is selected and API key is available, optimize with Gemini
+					if (effectiveLayoutMode === 'ai') {
+						try {
+							const apiKey = await storageManager.getAPIKey(context);
+							if (apiKey) {
+								console.log('[Extension] Optimizing diagram layout with Gemini AI on load...');
+								comprehensiveDiagram = await geminiAPIClient.optimizeDiagramLayout(
+									comprehensiveDiagram,
+									apiKey,
+									model as any
+								);
+								console.log('[Extension] Diagram optimized successfully on load');
+								
+								// Save the optimized diagram
+								await persistenceManager.scheduleSave(comprehensiveDiagram);
+							}
+						} catch (error) {
+							console.error('[Extension] Failed to optimize diagram with AI on load:', error);
+							// Continue with non-optimized diagram
+						}
+					}
 					
 					// Get all analyses from cache
 					const allAnalyses = new Map<string, any>();
@@ -154,7 +197,30 @@ export function activate(context: vscode.ExtensionContext) {
 				const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
 				
 				// Build diagram from cache with current visibility settings
-				const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+				let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+				
+				// If AI mode is selected and API key is available, optimize with Gemini
+				if (effectiveLayoutMode === 'ai') {
+					try {
+						const apiKey = await storageManager.getAPIKey(context);
+						if (apiKey) {
+							console.log('[Extension] Optimizing diagram layout with Gemini AI on sidebar open...');
+							const model = await storageManager.getModel(context);
+							comprehensiveDiagram = await geminiAPIClient.optimizeDiagramLayout(
+								comprehensiveDiagram,
+								apiKey,
+								model as any
+							);
+							console.log('[Extension] Diagram optimized successfully on sidebar open');
+							
+							// Save the optimized diagram
+							await persistenceManager.scheduleSave(comprehensiveDiagram);
+						}
+					} catch (error) {
+						console.error('[Extension] Failed to optimize diagram with AI on sidebar open:', error);
+						// Continue with non-optimized diagram
+					}
+				}
 				
 				// Get all analyses from cache
 				const allAnalyses = new Map<string, any>();
@@ -168,11 +234,23 @@ export function activate(context: vscode.ExtensionContext) {
 				// Send diagram with all cached analyses
 				sidebarPanelManager.updateDiagramWithCache(comprehensiveDiagram, allAnalyzedFiles, allAnalyses);
 				
-				// Update security summary from restored cache
-				const securitySummary = securityAnalysisManager.getSummary();
-				if (securitySummary.totalFindings > 0) {
-					sidebarPanelManager.updateSecuritySummary(securitySummary);
+				// Load and send saved diagram positions
+				try {
+					const savedPositions = await storageManager.getDiagramPositions();
+					if (savedPositions && savedPositions.positions) {
+						sidebarPanelManager.sendDiagramPositions(savedPositions.positions);
+					}
+				} catch (error) {
+					console.error('[Extension] Failed to load diagram positions:', error);
 				}
+				
+				// Update security summary from restored cache (always send, even if empty)
+				const securitySummary = securityAnalysisManager.getSummary();
+				sidebarPanelManager.updateSecuritySummary(securitySummary);
+
+				// Update quality summary from restored cache (always send, even if empty)
+				const qualitySummary = qualityAnalysisManager.getSummary();
+				sidebarPanelManager.updateQualitySummary(qualitySummary);
 			}
 		}
 	);
@@ -205,6 +283,109 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(analyzeCommandPalette);
+
+	// Register test command to load sample data
+	const testDataCommand = vscode.commands.registerCommand(
+		'code-architect-hakalab.loadTestData',
+		async () => {
+			console.log('[Extension] Loading test data...');
+			
+			// Clear existing data
+			securityAnalysisManager.clear();
+			qualityAnalysisManager.clear();
+			
+			// Add sample security findings
+			const sampleSecurityAnalysis = {
+				securityWarnings: [
+					{
+						type: 'security',
+						severity: 'high',
+						message: 'Potential SQL injection vulnerability detected',
+						line: 42
+					},
+					{
+						type: 'security',
+						severity: 'medium',
+						message: 'Unvalidated user input used in file path',
+						line: 78
+					},
+					{
+						type: 'security',
+						severity: 'low',
+						message: 'Weak password hashing algorithm detected',
+						line: 105
+					}
+				]
+			};
+			
+			securityAnalysisManager.addFindings('test-file.ts', sampleSecurityAnalysis);
+			console.log('[Extension] Sample security findings added');
+			
+			// Add sample quality findings
+			const sampleQualityAnalysis = {
+				logicWarnings: [
+					{
+						type: 'logic',
+						severity: 'high',
+						message: 'Potential null pointer exception - variable not checked before use',
+						line: 23
+					},
+					{
+						type: 'logic',
+						severity: 'medium',
+						message: 'Unreachable code detected after return statement',
+						line: 56
+					}
+				],
+				bestPracticeWarnings: [
+					{
+						type: 'bestPractice',
+						severity: 'low',
+						message: 'Consider using const instead of let for immutable variables',
+						line: 12
+					},
+					{
+						type: 'bestPractice',
+						severity: 'low',
+						message: 'Function is too long (50+ lines), consider breaking it down',
+						line: 89
+					},
+					{
+						type: 'bestPractice',
+						severity: 'medium',
+						message: 'Missing error handling in async function',
+						line: 134
+					}
+				]
+			};
+			
+			qualityAnalysisManager.addFindings('test-file.ts', sampleQualityAnalysis);
+			console.log('[Extension] Sample quality findings added');
+			
+			// Get summaries
+			const securitySummary = securityAnalysisManager.getSummary();
+			const qualitySummary = qualityAnalysisManager.getSummary();
+			
+			console.log('[Extension] Security summary:', securitySummary);
+			console.log('[Extension] Quality summary:', qualitySummary);
+			
+			// Send to webview
+			sidebarPanelManager.createPanel(context, analysisCache);
+			
+			// Wait a bit for the webview to be ready, then send data and switch to security tab
+			setTimeout(() => {
+				console.log('[Extension] Sending summaries to webview...');
+				sidebarPanelManager.updateSecuritySummary(securitySummary);
+				sidebarPanelManager.updateQualitySummary(qualitySummary);
+				// Switch to security tab to show the data
+				sidebarPanelManager.switchTab('security');
+				console.log('[Extension] Summaries sent and switched to security tab');
+			}, 500);
+			
+			vscode.window.showInformationMessage('Test data loaded! Switched to Security tab.');
+		}
+	);
+	context.subscriptions.push(testDataCommand);
 
 	// Set up sidebar panel callbacks
 	sidebarPanelManager.setOnSaveAPIKeyCallback(async (apiKey: string) => {
@@ -323,6 +504,60 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	sidebarPanelManager.setOnGenerateSecurityReportCallback(async () => {
+		const summary = securityAnalysisManager.getSummary();
+		if (summary.totalFindings === 0) {
+			vscode.window.showWarningMessage('No security findings to report. Analyze some files first.');
+			return;
+		}
+
+		// Generate security report using ReportGenerator
+		const html = await reportGenerator.generateSecurityReport(summary);
+		
+		// Save to file
+		const uri = await vscode.window.showSaveDialog({
+			defaultUri: vscode.Uri.file('security-report.html'),
+			filters: {
+				'HTML': ['html']
+			}
+		});
+
+		if (uri) {
+			await vscode.workspace.fs.writeFile(uri, Buffer.from(html, 'utf8'));
+			vscode.window.showInformationMessage('Security report generated successfully!');
+			
+			// Open in browser
+			await vscode.env.openExternal(uri);
+		}
+	});
+
+	sidebarPanelManager.setOnGenerateQualityReportCallback(async () => {
+		const summary = qualityAnalysisManager.getSummary();
+		if (summary.totalIssues === 0) {
+			vscode.window.showWarningMessage('No quality issues to report. Analyze code quality first.');
+			return;
+		}
+
+		// Generate quality report using ReportGenerator
+		const html = await reportGenerator.generateQualityReport(summary);
+		
+		// Save to file
+		const uri = await vscode.window.showSaveDialog({
+			defaultUri: vscode.Uri.file('quality-report.html'),
+			filters: {
+				'HTML': ['html']
+			}
+		});
+
+		if (uri) {
+			await vscode.workspace.fs.writeFile(uri, Buffer.from(html, 'utf8'));
+			vscode.window.showInformationMessage('Quality report generated successfully!');
+			
+			// Open in browser
+			await vscode.env.openExternal(uri);
+		}
+	});
+
 	sidebarPanelManager.setOnAnalyzeCodeQualityCallback(async () => {
 		const apiKey = await storageManager.getAPIKey(context);
 		if (!apiKey) {
@@ -342,7 +577,39 @@ export function activate(context: vscode.ExtensionContext) {
 		const fileNames = analyzedFiles.map(f => f.name);
 
 		// Analyze code quality using Gemini
-		return await geminiAPIClient.analyzeCodeQuality(fileNames, apiKey, model as any);
+		const qualityResult = await geminiAPIClient.analyzeCodeQuality(fileNames, apiKey, model as any);
+		
+		// Clear previous quality findings
+		qualityAnalysisManager.clear();
+		
+		// Add quality issues to the manager
+		analyzedFiles.forEach(file => {
+			qualityAnalysisManager.addQualityIssues(file.name, {
+				bugs: qualityResult.bugs?.filter((b: any) => b.file === file.name) || [],
+				improvements: qualityResult.improvements?.filter((i: any) => i.file === file.name) || [],
+				performance: qualityResult.performance?.filter((p: any) => p.file === file.name) || [],
+				bestPractices: qualityResult.bestPractices?.filter((bp: any) => bp.file === file.name) || []
+			});
+		});
+		
+		return qualityResult;
+	});
+
+	sidebarPanelManager.setOnNavigateToCodeCallback(async (file: string, line?: number, column?: number) => {
+		await codeNavigationHandler.navigateToCode({ file, line, column });
+	});
+
+	sidebarPanelManager.setOnSaveDiagramPositionsCallback(async (positions: any) => {
+		try {
+			const persistenceData = {
+				positions: positions,
+				lastUpdated: new Date().toISOString()
+			};
+			await storageManager.saveDiagramPositions(persistenceData);
+			console.log('[Extension] Diagram positions saved successfully');
+		} catch (error) {
+			console.error('[Extension] Failed to save diagram positions:', error);
+		}
 	});
 
 	sidebarPanelManager.setOnNavigateToDependencyCallback(async (filePath: string) => {
@@ -700,6 +967,11 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		// Add findings to security analysis manager
 		const fileName = path.basename(fileUri.fsPath);
 		securityAnalysisManager.addFindings(fileName, analysisResult);
+		console.log('[Extension] Security findings added for:', fileName);
+
+		// Add findings to quality analysis manager
+		qualityAnalysisManager.addFindings(fileName, analysisResult);
+		console.log('[Extension] Quality findings added for:', fileName);
 
 		// Build a comprehensive diagram from all cached analyses
 		const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
@@ -735,6 +1007,11 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 
 		// Get security summary
 		const securitySummary = securityAnalysisManager.getSummary();
+		console.log('[Extension] Security summary:', securitySummary);
+
+		// Get quality summary
+		const qualitySummary = qualityAnalysisManager.getSummary();
+		console.log('[Extension] Quality summary:', qualitySummary);
 
 		// Schedule persistence with debouncing
 		await persistenceManager.scheduleSave(comprehensiveDiagram);
@@ -744,6 +1021,11 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		
 		// Update security summary
 		sidebarPanelManager.updateSecuritySummary(securitySummary);
+		console.log('[Extension] Security summary sent to webview');
+
+		// Update quality summary
+		sidebarPanelManager.updateQualitySummary(qualitySummary);
+		console.log('[Extension] Quality summary sent to webview');
 
 		// Save analysis cache to persistent storage
 		await saveAnalysisCache(context);
@@ -1412,12 +1694,16 @@ async function saveAnalysisCache(context: vscode.ExtensionContext): Promise<void
 			analyzedFiles: securityAnalysisManager.getAnalyzedFiles()
 		};
 
+		// Get quality findings
+		const qualityFindings = qualityAnalysisManager.getCacheData();
+
 		// Create cache data
 		const cacheData: AnalysisCacheData = {
 			version: CACHE_VERSION,
 			timestamp: Date.now(),
 			analyses: analyses,
-			securityFindings: securityFindings
+			securityFindings: securityFindings,
+			qualityFindings: qualityFindings
 		};
 
 		// Save to JSON file in workspace storage directory

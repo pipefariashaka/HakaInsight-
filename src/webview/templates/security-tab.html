@@ -1,0 +1,71 @@
+        <div class="tab-content" id="security-tab">
+            <div class="security-container">
+                <div class="security-empty-state" id="security-empty-state">
+                    <div class="empty-state-icon">🔒</div>
+                    <div class="empty-state-title">No Security Analysis Available</div>
+                    <div class="empty-state-message">
+                        Analyze some files to see security and quality findings here.
+                    </div>
+                </div>
+                
+                <div class="security-content" id="security-content" style="display: none;">
+                    <div class="security-summary" id="security-summary">
+                        <div class="summary-header">
+                            <h3 data-i18n="analysisSummary"></h3>
+                        </div>
+                        <div class="summary-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-findings">0</div>
+                                <div class="stat-label" data-i18n="totalFindings">Total Findings</div>
+                            </div>
+                            <div class="stat-card stat-high">
+                                <div class="stat-value" id="high-severity">0</div>
+                                <div class="stat-label" data-i18n="highSeverity">High Severity</div>
+                            </div>
+                            <div class="stat-card stat-medium">
+                                <div class="stat-value" id="medium-severity">0</div>
+                                <div class="stat-label" data-i18n="mediumSeverity">Medium Severity</div>
+                            </div>
+                            <div class="stat-card stat-low">
+                                <div class="stat-value" id="low-severity">0</div>
+                                <div class="stat-label" data-i18n="lowSeverity">Low Severity</div>
+                            </div>
+                        </div>
+                        <div class="risk-level-container">
+                            <div class="risk-level-content">
+                                <div class="risk-level-label" data-i18n="overallRiskLevel">Overall Risk Level:</div>
+                                <div class="risk-level-badge" id="risk-level-badge" data-i18n="riskLow">Low</div>
+                            </div>
+                            <button class="risk-info-button" id="risk-info-btn" title="How is risk calculated?">?</button>
+                            <button class="report-button" id="generate-security-report-btn" title="Generar Reporte">
+                                📄 Report
+                            </button>
+                        </div>
+                        
+                        <div class="ai-report-section" id="ai-report-section" style="display: none;">
+                            <div class="ai-report-header">
+                                <h4 data-i18n="aiExecutiveSummary">🤖 AI Executive Summary</h4>
+                                <button class="button-regenerate" id="regenerate-btn">
+                                    <span class="button-icon">🔄</span>
+                                    <span class="button-text" data-i18n="regenerate">Regenerate</span>
+                                </button>
+                            </div>
+                            <div class="ai-report-content" id="ai-report-content">
+                                <div class="ai-report-loading" id="ai-report-loading">
+                                    <div class="loading-spinner"></div>
+                                    <div class="loading-text" data-i18n="generatingAISummary">Generating AI summary...</div>
+                                </div>
+                                <div class="ai-report-text" id="ai-report-text"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="security-findings" id="security-findings">
+                        <div class="findings-header">
+                            <h3 data-i18n="findings">🔍 Findings</h3>
+                        </div>
+                        <div id="findings-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>

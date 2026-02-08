@@ -1,0 +1,70 @@
+        <div class="tab-content" id="quality-tab">
+            <div class="quality-container">
+                <div class="quality-empty-state" id="quality-empty-state">
+                    <div class="empty-state-icon">🔍</div>
+                    <h4>No hay análisis de calidad disponible</h4>
+                    <p>Presiona el botón "Analizar Calidad" para comenzar</p>
+                </div>
+
+                <div class="quality-content" id="quality-content" style="display: none;">
+                    <div class="quality-summary" id="quality-summary">
+                        <div class="summary-header">
+                            <h3>📊 Resumen del Análisis</h3>
+                        </div>
+                        <div class="summary-stats">
+                            <div class="stat-card stat-info">
+                                <div class="stat-value" id="quality-score">0</div>
+                                <div class="stat-label">Puntuación de Calidad</div>
+                            </div>
+                            <div class="stat-card stat-warning">
+                                <div class="stat-value" id="improvement-count">0</div>
+                                <div class="stat-label">Oportunidades de Mejora</div>
+                            </div>
+                            <div class="stat-card stat-high">
+                                <div class="stat-value" id="bug-count">0</div>
+                                <div class="stat-label">Posibles Bugs</div>
+                            </div>
+                        </div>
+                        <div class="risk-level-container">
+                            <div class="risk-level-content">
+                                <button class="button-recommendation" id="analyze-quality-btn">
+                                    <span class="button-icon">🔍</span>
+                                    <span class="button-text">Analizar Calidad</span>
+                                </button>
+                            </div>
+                            <button class="report-button" id="generate-quality-report-btn" title="Generate Quality Report" style="display: none;">
+                                <span class="button-icon">📄</span>
+                                <span class="button-text">Report</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="quality-findings">
+                        <div class="findings-header">
+                            <h3>🔍 Hallazgos</h3>
+                        </div>
+                        <div id="quality-findings-list">
+                            <div class="quality-section">
+                                <h4>🐛 Posibles Bugs</h4>
+                                <div id="bugs-list" class="quality-list"></div>
+                            </div>
+
+                            <div class="quality-section">
+                                <h4>💡 Oportunidades de Mejora</h4>
+                                <div id="improvements-list" class="quality-list"></div>
+                            </div>
+
+                            <div class="quality-section">
+                                <h4>⚡ Optimizaciones de Rendimiento</h4>
+                                <div id="performance-list" class="quality-list"></div>
+                            </div>
+
+                            <div class="quality-section">
+                                <h4>📝 Mejores Prácticas</h4>
+                                <div id="best-practices-list" class="quality-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>

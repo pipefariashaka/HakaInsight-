@@ -4,14 +4,18 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 
 ## Features
 
-- 📊 **Visual Architecture Diagrams** - Interactive diagrams with zoom and pan
-- 🔍 **Code Analysis** - Powered by Gemini 3 AI
-- ⚠️ **Smart Warnings** - Security, logic, and best practice warnings
+- 📊 **Visual Architecture Diagrams** - Interactive diagrams with zoom, pan, and persistent node positions
+- 🔍 **Code Analysis** - Powered by Gemini 3 AI with dual model support (Flash & Pro)
+- 🔐 **Security Analysis** - Dedicated security tab with risk level calculation and AI executive summaries
+- 📈 **Quality Analysis** - Separate quality tab with code quality scoring and categorized issues
 - 💾 **Analysis Cache** - Analyses are cached to save API tokens
-- 🔐 **Secure Configuration** - API Key stored securely in VS Code
-- 🎨 **Modern UI** - Dark theme with polished tab styling
+- 🧭 **Code Navigation** - Click to jump directly to code locations from findings
+- 📄 **Report Generation** - Generate professional HTML reports for security and quality
+- 🎨 **Modern UI** - Dark theme with polished tab styling and consistent button design
 - 🚀 **Fast Performance** - Cached analyses load instantly without API calls
-- 🌐 **Bilingual** - Full support for English and Spanish
+- 🌐 **Bilingual** - Full support for English and Spanish with instant language switching
+- 🔄 **Auto-Loading** - Diagrams load automatically when opening the sidebar
+- ⚡ **Smart Loading States** - Visual feedback during analysis operations
 
 ## Installation
 
@@ -22,10 +26,12 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 
 ### 1. Configure API Key
 
-1. Open the extension panel (click the icon in the sidebar)
+1. Open the extension panel (click the Haka Insight icon in the sidebar)
 2. Go to the "Settings" tab
 3. Enter your Gemini 3 API Key
-4. Click "Save"
+4. Select your preferred model (Flash for speed, Pro for detail)
+5. Click "Save"
+6. Optionally click "Test Connection" to verify
 
 ### 2. Analyze Code
 
@@ -34,11 +40,31 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 3. Select "Analyze Architecture"
 4. View the diagram and analysis in the panel
 
-### 3. Explore Diagram
+### 3. Explore Features
 
+**Diagram Tab:**
 - **Zoom**: Use mouse wheel to zoom in/out
 - **Pan**: Click and drag to move around
 - **Navigate**: Click on dependencies to open related files
+- **Persist**: Node positions are automatically saved
+
+**Security Tab:**
+- View security findings categorized by severity
+- Check overall risk level calculation
+- Read AI-generated executive summary
+- Generate professional security reports
+- Navigate directly to code locations
+
+**Quality Tab:**
+- Analyze code quality with scoring
+- Review bugs, improvements, performance issues, and best practices
+- Generate detailed quality reports
+- Jump to specific code issues
+
+**Settings Tab:**
+- Configure API key and model
+- Change interface language (English/Spanish)
+- Test API connection
 
 ## Commands
 
@@ -46,6 +72,7 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 - `Analyze with Haka Insight` - Analyze the current file (right-click menu)
 - `Clear Haka Insight Diagram` - Clear all stored diagrams and cache
 - `Clear Cache` - Clear cached analyses to free up storage
+- `Load Test Data` - Load sample data for testing (development only)
 
 ## Requirements
 
@@ -58,6 +85,20 @@ A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source
 
 The extension stores your API Key securely using VS Code's secret storage. It is never exposed in plain text.
 
+### Model Selection
+
+Choose between two Gemini models:
+- **Gemini 3 Flash (Lite)**: Faster responses, lower cost, good for quick analyses
+- **Gemini 3 Pro**: More detailed analysis, better for complex code
+
+### Language Support
+
+Switch between English and Spanish in the Settings tab. The interface updates immediately. Note that existing analyses remain in their original language - re-analyze files to see them in the new language.
+
+### Diagram Persistence
+
+Node positions are automatically saved as you arrange them. Your custom layouts persist across VS Code sessions.
+
 ### Analysis Cache
 
 Analyses are automatically cached to save API tokens and improve performance:
@@ -69,9 +110,13 @@ Analyses are automatically cached to save API tokens and improve performance:
 - **Update Option**: Click "Update Analysis" to refresh cached data
 - **Cache Management**: Use "Clear Cache" command to free up storage
 
-### Diagram Storage
+### Report Generation
 
-Diagrams are stored in your workspace's global storage directory. They persist across VS Code sessions.
+Generate professional HTML reports:
+- **Security Reports**: Comprehensive security analysis with risk assessment
+- **Quality Reports**: Detailed code quality metrics with scoring
+- Reports include charts, statistics, and actionable recommendations
+- Open directly in your browser for easy sharing
 
 ## How It Works
 
@@ -207,7 +252,23 @@ For issues, questions, or suggestions, please open an issue on GitHub.
 
 ## Changelog
 
-### Version 0.0.2 (Latest)
+### Version 0.0.3 (Latest)
+
+**Major UI Improvements & New Features**
+- ✨ **Separated Security & Quality Tabs**: Dedicated tabs for security and quality analysis
+- 🔐 **Enhanced Security Analysis**: Risk level calculation, severity categorization, AI executive summaries
+- 📈 **Quality Scoring System**: Comprehensive code quality metrics with 0-100 scoring
+- 🧭 **Code Navigation**: Click "Go to code" buttons to jump directly to issues in your files
+- 📄 **Report Generation**: Generate professional HTML reports for security and quality
+- 💾 **Diagram Persistence**: Node positions automatically save and restore
+- 🎨 **Redesigned Settings UI**: Cleaner, more compact layout with better organization
+- 🔘 **Consistent Button Styling**: Unified color scheme matching tab design
+- ⚡ **Smart Loading States**: Visual feedback during analysis operations
+- 🔄 **Auto-Loading Diagrams**: Diagrams load automatically when opening sidebar
+- 🌐 **Improved i18n**: Complete English and Spanish translations for all new features
+- 🎯 **Dual Model Support**: Choose between Gemini Flash (fast) and Pro (detailed)
+
+### Version 0.0.2
 
 **UI Polish & Analysis Persistence**
 - ✨ New polished tab styling with dark blue active tabs

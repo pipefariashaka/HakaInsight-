@@ -6,10 +6,11 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { DiagramData } from '../models';
+import { DiagramData, DiagramPersistenceData } from '../models';
 import { IStorageManager } from './types';
 
 const DIAGRAM_STORAGE_KEY = 'code-architect-diagram';
+const DIAGRAM_POSITIONS_KEY = 'code-architect-diagram-positions';
 const API_KEY_STORAGE_KEY = 'code-architect-api-key';
 const MODEL_STORAGE_KEY = 'code-architect-model';
 const LAYOUT_MODE_STORAGE_KEY = 'code-architect-layout-mode';
@@ -120,6 +121,29 @@ export class StorageManager implements IStorageManager {
       return layoutMode || 'ai'; // Default to AI-Optimized
     } catch (error) {
       throw new Error(`Failed to get layout mode: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async saveDiagramPositions(positions: DiagramPersistenceData): Promise<void> {
+    try {
+      const filePath = path.join(this.storagePath, `${DIAGRAM_POSITIONS_KEY}.json`);
+      const data = JSON.stringify(positions, null, 2);
+      fs.writeFileSync(filePath, data, 'utf-8');
+    } catch (error) {
+      throw new Error(`Failed to save diagram positions: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getDiagramPositions(): Promise<DiagramPersistenceData | null> {
+    try {
+      const filePath = path.join(this.storagePath, `${DIAGRAM_POSITIONS_KEY}.json`);
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+      const data = fs.readFileSync(filePath, 'utf-8');
+      return JSON.parse(data) as DiagramPersistenceData;
+    } catch (error) {
+      throw new Error(`Failed to load diagram positions: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

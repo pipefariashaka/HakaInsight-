@@ -1,0 +1,88 @@
+        <div class="tab-content" id="settings-tab">
+            <div class="settings-container">
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <span class="settings-section-title">Language Settings</span>
+                    </div>
+                    <div class="settings-section-content">
+                        <div class="form-group-compact">
+                            <label for="language" class="label-compact">Display Language</label>
+                            <select id="language-select" class="input-compact">
+                                <option value="en" selected>English</option>
+                                <option value="es">Español</option>
+                            </select>
+                        </div>
+                        <button id="save-language-btn" class="report-button" style="margin-top: 10px;">
+                            <span class="button-text">Save Language</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <span class="settings-section-title">Diagram Layout</span>
+                    </div>
+                    <div class="settings-section-content">
+                        <div class="form-group-compact">
+                            <label for="layout-mode" class="label-compact">Layout Optimization</label>
+                            <select id="layout-mode" class="input-compact">
+                                <option value="ai" selected>AI-Optimized (Gemini)</option>
+                                <option value="hierarchical">Hierarchical (Layered)</option>
+                                <option value="auto">Automatic (D3 Force-Directed)</option>
+                            </select>
+                            <div class="help-text">
+                                <strong>AI-Optimized:</strong> Gemini analyzes and optimizes the layout (requires API key)<br>
+                                <strong>Hierarchical:</strong> Organized in layers, reduces crossings<br>
+                                <strong>Automatic:</strong> Fast, physics-based layout
+                            </div>
+                        </div>
+                        <button id="apply-layout-btn" class="report-button" style="margin-top: 10px;">
+                            <span class="button-text" data-i18n="updateDiagram">Update Diagram</span>
+                        </button>
+                        <div id="layout-status" class="connection-status"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <span class="settings-section-title">AI Configuration</span>
+                    </div>
+                    <div class="settings-section-content">
+                        <!-- 1. API Key -->
+                        <div class="form-group-compact">
+                            <label for="api-key" class="label-compact">Gemini API Key</label>
+                            <input type="password" id="api-key" class="input-compact input-api-key" placeholder="Enter your Gemini API Key">
+                        </div>
+                        
+                        <!-- 2. Model Selection -->
+                        <div class="form-group-compact" style="margin-top: 12px;">
+                            <label for="model" class="label-compact">Model</label>
+                            <select id="model" class="input-compact">
+                                <option value="gemini-3-flash-preview">Gemini 3 Flash (Lite) - Faster</option>
+                                <option value="gemini-3-pro">Gemini 3 Pro - More Detailed</option>
+                            </select>
+                            <div class="help-text" style="margin-top: 8px;">
+                                <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your API key from Google AI Studio</a>
+                            </div>
+                        </div>
+                        
+                        <!-- 3. Action Buttons - All with same style -->
+                        <div class="button-group-inline" style="margin-top: 12px; gap: 8px;">
+                            <button class="button-compact button-secondary" id="save-api-key-btn">
+                                <span class="button-text">Save</span>
+                            </button>
+                            <button class="button-compact button-secondary" id="clear-api-key-btn">
+                                <span class="button-text">Clear</span>
+                            </button>
+                            <button class="button-compact button-secondary" id="test-connection-btn">
+                                <span class="button-text">Test Connection</span>
+                            </button>
+                        </div>
+                        
+                        <div id="connection-status" class="connection-status"></div>
+                    </div>
+                </div>
+
+                <div id="status-message"></div>
+            </div>
+        </div>

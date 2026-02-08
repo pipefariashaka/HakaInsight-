@@ -88,3 +88,13 @@ export interface AnalysisResult {
     }>;
   };
 }
+
+/**
+ * Represents persisted diagram node positions
+ */
+export interface DiagramPersistenceData {
+  positions: {
+    [nodeId: string]: { x: number; y: number };
+  };
+  lastUpdated: string;
+}

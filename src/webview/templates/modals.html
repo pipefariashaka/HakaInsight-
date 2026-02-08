@@ -1,0 +1,88 @@
+    <!-- Left Menu -->
+    <div class="left-menu" id="left-menu">
+        <div class="left-menu-header">
+            <div class="left-menu-title">Analyzed Files</div>
+            <div class="left-menu-close" id="left-menu-close">✕</div>
+        </div>
+        <div id="analyzed-files-list"></div>
+    </div>
+
+    <!-- Analysis Modal -->
+    <div class="analysis-modal" id="analysis-modal">
+        <div class="modal-content">
+            <div class="modal-spinner"></div>
+            <h4 data-i18n="analyzing">Analyzing...</h4>
+            <p id="analysis-status"></p>
+        </div>
+    </div>
+
+    <!-- Node Popup -->
+    <div class="node-popup" id="node-popup">
+        <div class="node-popup-title" id="popup-title"></div>
+        <div class="node-popup-description" id="popup-description"></div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" id="analyze-context-file">Analyze</div>
+        <div class="context-menu-item" id="update-context-file">Update Analysis</div>
+    </div>
+
+    <!-- Details Panel -->
+    <div class="details-panel" id="details-panel">
+        <div class="details-panel-resizer" id="details-panel-resizer"></div>
+        <div class="details-panel-header">
+            <div class="details-panel-title" id="details-panel-title">📋 File Analysis Details</div>
+            <div class="details-panel-close" id="details-panel-close">✕</div>
+        </div>
+        <div class="details-panel-content" id="details-panel-content">
+            <!-- Content will be populated dynamically -->
+        </div>
+    </div>
+
+    <!-- Risk Info Modal -->
+    <div class="risk-info-modal" id="risk-info-modal">
+        <div class="risk-info-content">
+            <div class="risk-info-header">
+                <h4>Risk Level Calculation</h4>
+                <button class="risk-info-close" id="risk-info-close">X</button>
+            </div>
+            <div class="risk-info-body">
+                <p><strong>How we calculate the overall risk level:</strong></p>
+                
+                <div class="risk-formula">
+                    <div class="risk-formula-item">
+                        <span class="severity-badge high">High</span>
+                        <span class="formula-text">x 5 points</span>
+                    </div>
+                    <div class="risk-formula-item">
+                        <span class="severity-badge medium">Medium</span>
+                        <span class="formula-text">x 2 points</span>
+                    </div>
+                    <div class="risk-formula-item">
+                        <span class="severity-badge low">Low</span>
+                        <span class="formula-text">x 1 point</span>
+                    </div>
+                </div>
+                
+                <div class="risk-levels">
+                    <div class="risk-level-item critical">
+                        <strong>CRITICAL</strong>
+                        <p>Any high severity finding OR score &gt;= 12</p>
+                    </div>
+                    <div class="risk-level-item high">
+                        <strong>HIGH</strong>
+                        <p>Score &gt;= 6 (e.g., 3 medium issues)</p>
+                    </div>
+                    <div class="risk-level-item medium">
+                        <strong>MEDIUM</strong>
+                        <p>Score &gt;= 3 (e.g., 1-2 medium issues)</p>
+                    </div>
+                    <div class="risk-level-item low">
+                        <strong>LOW</strong>
+                        <p>Score &lt; 3 (only low severity findings)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

@@ -9,6 +9,13 @@ export interface SecurityFinding {
     severity: 'high' | 'medium' | 'low';
     message: string;
     line?: number;
+    id?: string; // Unique identifier for deduplication
+}
+
+export interface GroupedFindings {
+    [file: string]: {
+        [type: string]: SecurityFinding[];
+    };
 }
 
 export interface SecuritySummary {
@@ -19,6 +26,7 @@ export interface SecuritySummary {
     riskLevel: 'critical' | 'high' | 'medium' | 'low';
     analyzedFiles: string[];
     findings: SecurityFinding[];
+    groupedFindings: GroupedFindings;
 }
 
 export class SecurityAnalysisManager {
@@ -26,49 +34,82 @@ export class SecurityAnalysisManager {
     private analyzedFiles: Set<string> = new Set();
 
     /**
+     * Generate a unique ID for a finding to detect duplicates
+     */
+    private generateFindingId(finding: SecurityFinding): string {
+        // Create ID based on file, type, severity, and normalized message
+        const normalizedMessage = finding.message.toLowerCase().trim();
+        return `${finding.file}|${finding.type}|${finding.severity}|${normalizedMessage}`;
+    }
+
+    /**
+     * Check if a finding is a duplicate
+     */
+    private isDuplicate(newFinding: SecurityFinding): boolean {
+        const newId = this.generateFindingId(newFinding);
+        return this.findings.some(existing => {
+            const existingId = this.generateFindingId(existing);
+            return existingId === newId;
+        });
+    }
+
+    /**
      * Add findings from a file analysis
      */
     addFindings(fileName: string, analysisResult: any): void {
         this.analyzedFiles.add(fileName);
 
-        // Add security warnings
+        // Add security warnings only
         if (analysisResult.securityWarnings && Array.isArray(analysisResult.securityWarnings)) {
             analysisResult.securityWarnings.forEach((warning: any) => {
-                this.findings.push({
+                const finding: SecurityFinding = {
                     file: fileName,
                     type: 'security',
                     severity: warning.severity || 'medium',
                     message: warning.message,
                     line: warning.line,
-                });
-            });
-        }
+                };
 
-        // Add logic warnings
-        if (analysisResult.logicWarnings && Array.isArray(analysisResult.logicWarnings)) {
-            analysisResult.logicWarnings.forEach((warning: any) => {
-                this.findings.push({
-                    file: fileName,
-                    type: 'logic',
-                    severity: warning.severity || 'medium',
-                    message: warning.message,
-                    line: warning.line,
-                });
+                // Only add if not duplicate
+                if (!this.isDuplicate(finding)) {
+                    finding.id = this.generateFindingId(finding);
+                    this.findings.push(finding);
+                }
             });
         }
+    }
 
-        // Add best practice warnings
-        if (analysisResult.bestPracticeWarnings && Array.isArray(analysisResult.bestPracticeWarnings)) {
-            analysisResult.bestPracticeWarnings.forEach((warning: any) => {
-                this.findings.push({
-                    file: fileName,
-                    type: 'bestPractice',
-                    severity: warning.severity || 'low',
-                    message: warning.message,
-                    line: warning.line,
+    /**
+     * Group findings by file and type
+     */
+    private groupFindings(): GroupedFindings {
+        const grouped: GroupedFindings = {};
+
+        this.findings.forEach(finding => {
+            // Initialize file group if not exists
+            if (!grouped[finding.file]) {
+                grouped[finding.file] = {
+                    security: [],
+                    logic: [],
+                    bestPractice: []
+                };
+            }
+
+            // Add to appropriate type group
+            grouped[finding.file][finding.type].push(finding);
+        });
+
+        // Sort findings within each group by severity (high -> medium -> low)
+        const severityOrder = { high: 0, medium: 1, low: 2 };
+        Object.keys(grouped).forEach(file => {
+            Object.keys(grouped[file]).forEach(type => {
+                grouped[file][type].sort((a, b) => {
+                    return severityOrder[a.severity] - severityOrder[b.severity];
                 });
             });
-        }
+        });
+
+        return grouped;
     }
 
     /**
@@ -83,6 +124,7 @@ export class SecurityAnalysisManager {
             riskLevel: 'low',
             analyzedFiles: Array.from(this.analyzedFiles),
             findings: this.findings,
+            groupedFindings: this.groupFindings(),
         };
 
         // Count by severity

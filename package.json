@@ -51,6 +51,10 @@
       {
         "command": "code-architect-hakalab.clearDiagram",
         "title": "Clear Haka Insight Diagram"
+      },
+      {
+        "command": "code-architect-hakalab.loadTestData",
+        "title": "Haka Insight: Load Test Data"
       }
     ],
     "menus": {

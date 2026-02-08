@@ -1,0 +1,46 @@
+        <div class="tab-content active" id="diagram-tab">
+            <div class="diagram-container">
+                <div class="diagram-wrapper">
+                    <svg id="diagram-svg"></svg>
+                    
+                    <!-- Diagram Loading Indicator -->
+                    <div class="diagram-loading" id="diagram-loading">
+                        <div class="loading-spinner"></div>
+                        <p class="loading-text" data-i18n="loadingDiagramInfo">Loading information, please wait...</p>
+                    </div>
+                    
+                    <!-- Unified control buttons in bottom-left corner -->
+                    <div class="control-buttons">
+                        <button class="control-button menu-button" id="menu-button" title="Menu">☰</button>
+                        <button class="control-button export-button" id="export-button" title="Export">📤</button>
+                        <button class="control-button" id="zoom-in-button" title="Zoom In">+</button>
+                        <button class="control-button" id="zoom-out-button" title="Zoom Out">−</button>
+                        <button class="control-button" id="reset-zoom-button" title="Reset">⟲</button>
+                    </div>
+                    
+                    <!-- Export menu -->
+                    <div class="export-menu" id="export-menu">
+                        <div class="export-menu-item" data-format="png">
+                            <span class="export-menu-item-icon">🖼️</span>Export as PNG
+                        </div>
+                        <div class="export-menu-item" data-format="svg">
+                            <span class="export-menu-item-icon">📐</span>Export as SVG
+                        </div>
+                        <div class="export-menu-item" data-format="mermaid">
+                            <span class="export-menu-item-icon">📊</span>Export as Mermaid
+                        </div>
+                        <div class="export-menu-item" data-format="json">
+                            <span class="export-menu-item-icon">📄</span>Export as JSON
+                        </div>
+                    </div>
+                </div>
+                <div class="explanation-container" id="explanation-container">
+                    <div class="explanation-title">📝 Code Explanation</div>
+                    <div class="explanation-text" id="explanation-text"></div>
+                </div>
+                <div class="warnings-container" id="warnings-container">
+                    <div class="warnings-title">⚠️ Warnings</div>
+                    <div id="warnings-content"></div>
+                </div>
+            </div>
+        </div>
