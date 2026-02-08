@@ -16,11 +16,18 @@
                     
                     <!-- Unified control buttons in bottom-left corner -->
                     <div class="control-buttons">
-                        <button class="control-button menu-button" id="menu-button" title="Menu">☰</button>
-                        <button class="control-button export-button" id="export-button" title="Export">📤</button>
+                        <button class="control-button menu-button" id="menu-button" title="Menu">
+                            <img src="{{MENU_ICON}}" alt="Menu" class="button-icon" />
+                        </button>
+                        <button class="control-button export-button" id="export-button">
+                            <img src="{{EXPORT_ICON}}" alt="Export" class="button-icon" />
+                        </button>
                         <button class="control-button" id="zoom-in-button" title="Zoom In">+</button>
                         <button class="control-button" id="zoom-out-button" title="Zoom Out">−</button>
                         <button class="control-button" id="reset-zoom-button" title="Reset">⟲</button>
+                        <button class="control-button delete-button" id="delete-diagram-button" title="Clear Diagram">
+                            <img src="{{DELETE_ICON}}" alt="Delete" class="button-icon" />
+                        </button>
                     </div>
                     
                     <!-- Export menu -->

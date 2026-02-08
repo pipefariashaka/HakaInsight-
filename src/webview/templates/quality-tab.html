@@ -2,65 +2,65 @@
             <div class="quality-container">
                 <div class="quality-empty-state" id="quality-empty-state">
                     <div class="empty-state-icon">🔍</div>
-                    <h4>No hay análisis de calidad disponible</h4>
-                    <p>Presiona el botón "Analizar Calidad" para comenzar</p>
+                    <h4 data-i18n="noQualityAnalysis">No Quality Analysis Available</h4>
+                    <p data-i18n="pressAnalyzeQuality">Press the "Analyze Quality" button to begin</p>
                 </div>
 
                 <div class="quality-content" id="quality-content" style="display: none;">
                     <div class="quality-summary" id="quality-summary">
                         <div class="summary-header">
-                            <h3>📊 Resumen del Análisis</h3>
+                            <h3>📊 <span data-i18n="analysisSummaryQuality">Analysis Summary</span></h3>
                         </div>
                         <div class="summary-stats">
                             <div class="stat-card stat-info">
                                 <div class="stat-value" id="quality-score">0</div>
-                                <div class="stat-label">Puntuación de Calidad</div>
+                                <div class="stat-label" data-i18n="qualityScore">Quality Score</div>
                             </div>
                             <div class="stat-card stat-warning">
                                 <div class="stat-value" id="improvement-count">0</div>
-                                <div class="stat-label">Oportunidades de Mejora</div>
+                                <div class="stat-label" data-i18n="improvementOpportunities">Improvement Opportunities</div>
                             </div>
                             <div class="stat-card stat-high">
                                 <div class="stat-value" id="bug-count">0</div>
-                                <div class="stat-label">Posibles Bugs</div>
+                                <div class="stat-label" data-i18n="possibleBugs">Possible Bugs</div>
                             </div>
                         </div>
                         <div class="risk-level-container">
                             <div class="risk-level-content">
                                 <button class="button-recommendation" id="analyze-quality-btn">
                                     <span class="button-icon">🔍</span>
-                                    <span class="button-text">Analizar Calidad</span>
+                                    <span class="button-text" data-i18n="analyzeQuality">Analyze Quality</span>
                                 </button>
                             </div>
                             <button class="report-button" id="generate-quality-report-btn" title="Generate Quality Report" style="display: none;">
                                 <span class="button-icon">📄</span>
-                                <span class="button-text">Report</span>
+                                <span class="button-text" data-i18n="report">Report</span>
                             </button>
                         </div>
                     </div>
 
                     <div class="quality-findings">
                         <div class="findings-header">
-                            <h3>🔍 Hallazgos</h3>
+                            <h3>🔍 <span data-i18n="findings">Findings</span></h3>
                         </div>
                         <div id="quality-findings-list">
                             <div class="quality-section">
-                                <h4>🐛 Posibles Bugs</h4>
+                                <h4>🐛 <span data-i18n="possibleBugs">Possible Bugs</span></h4>
                                 <div id="bugs-list" class="quality-list"></div>
                             </div>
 
                             <div class="quality-section">
-                                <h4>💡 Oportunidades de Mejora</h4>
+                                <h4>💡 <span data-i18n="improvementOpportunities">Improvement Opportunities</span></h4>
                                 <div id="improvements-list" class="quality-list"></div>
                             </div>
 
                             <div class="quality-section">
-                                <h4>⚡ Optimizaciones de Rendimiento</h4>
+                                <h4>⚡ <span data-i18n="performanceOptimizations">Performance Optimizations</span></h4>
                                 <div id="performance-list" class="quality-list"></div>
                             </div>
 
                             <div class="quality-section">
-                                <h4>📝 Mejores Prácticas</h4>
+                                <h4>📝 <span data-i18n="bestPractices">Best Practices</span></h4>
                                 <div id="best-practices-list" class="quality-list"></div>
                             </div>
                         </div>

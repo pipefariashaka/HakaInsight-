@@ -74,6 +74,7 @@ const vscode = acquireVsCodeApi();
                 languageSettings: 'Language Settings',
                 diagramType: 'Diagram Type',
                 apiConfiguration: 'API Configuration',
+                aiConfiguration: 'AI Configuration',
                 displayLanguage: 'Display Language',
                 getApiKey: 'Get your API key from',
                 
@@ -186,7 +187,32 @@ const vscode = acquireVsCodeApi();
                 getRecommendation: 'Get Recommendation',
                 recommendation: 'Recommendation',
                 loadingRecommendation: 'Loading recommendation...',
-                navigateToCode: 'Go to code'
+                navigateToCode: 'Go to code',
+                
+                // Quality tab
+                quality: 'Quality',
+                noQualityAnalysis: 'No Quality Analysis Available',
+                pressAnalyzeQuality: 'Press the "Analyze Quality" button to begin',
+                analysisSummaryQuality: 'Analysis Summary',
+                qualityScore: 'Quality Score',
+                improvementOpportunities: 'Improvement Opportunities',
+                possibleBugs: 'Possible Bugs',
+                analyzeQuality: 'Analyze Quality',
+                report: 'Report',
+                performanceOptimizations: 'Performance Optimizations',
+                bestPractices: 'Best Practices',
+                suggestion: 'Suggestion:',
+                noBugsFound: 'No possible bugs found',
+                noImprovementsFound: 'No improvement opportunities found',
+                noPerformanceIssues: 'No performance issues found',
+                followsBestPractices: 'Code follows best practices',
+                qualityAnalysisComplete: 'Quality analysis completed',
+                
+                // About tab
+                about: 'About Haka Insight',
+                
+                // Confirmations
+                confirmClearDiagram: 'Are you sure you want to clear the diagram? This will remove all analyses and cannot be undone.'
             },
             es: {
                 // Tabs
@@ -203,6 +229,7 @@ const vscode = acquireVsCodeApi();
                 languageSettings: 'Configuración de Idioma',
                 diagramType: 'Tipo de Diagrama',
                 apiConfiguration: 'Configuración de IA',
+                aiConfiguration: 'Configuración de IA',
                 displayLanguage: 'Idioma de Visualización',
                 getApiKey: 'Obtenga su clave API desde',
                 
@@ -315,7 +342,32 @@ const vscode = acquireVsCodeApi();
                 getRecommendation: 'Obtener Recomendación',
                 recommendation: 'Recomendación',
                 loadingRecommendation: 'Cargando recomendación...',
-                navigateToCode: 'Ir al código'
+                navigateToCode: 'Ir al código',
+                
+                // Quality tab
+                quality: 'Calidad',
+                noQualityAnalysis: 'No hay análisis de calidad disponible',
+                pressAnalyzeQuality: 'Presiona el botón "Analizar Calidad" para comenzar',
+                analysisSummaryQuality: 'Resumen del Análisis',
+                qualityScore: 'Puntuación de Calidad',
+                improvementOpportunities: 'Oportunidades de Mejora',
+                possibleBugs: 'Posibles Bugs',
+                analyzeQuality: 'Analizar Calidad',
+                report: 'Reporte',
+                performanceOptimizations: 'Optimizaciones de Rendimiento',
+                bestPractices: 'Mejores Prácticas',
+                suggestion: 'Sugerencia:',
+                noBugsFound: 'No se encontraron posibles bugs',
+                noImprovementsFound: 'No se encontraron oportunidades de mejora',
+                noPerformanceIssues: 'No se encontraron problemas de rendimiento',
+                followsBestPractices: 'El código sigue las mejores prácticas',
+                qualityAnalysisComplete: 'Análisis de calidad completado',
+                
+                // About tab
+                about: 'Sobre Haka Insight',
+                
+                // Confirmations
+                confirmClearDiagram: '¿Está seguro de que desea limpiar el diagrama? Esto eliminará todos los análisis y no se puede deshacer.'
             }
         };
         
@@ -336,9 +388,13 @@ const vscode = acquireVsCodeApi();
             const diagramTab = document.querySelector('[data-tab="diagram"]');
             const settingsTab = document.querySelector('[data-tab="settings"]');
             const securityTab = document.querySelector('[data-tab="security"]');
+            const qualityTab = document.querySelector('[data-tab="quality"]');
+            const aboutTab = document.querySelector('[data-tab="about"]');
             if (diagramTab) diagramTab.textContent = t('diagram');
             if (settingsTab) settingsTab.textContent = t('settings');
             if (securityTab) securityTab.textContent = t('security');
+            if (qualityTab) qualityTab.textContent = t('quality');
+            if (aboutTab) aboutTab.textContent = t('about');
             
             // Update settings section titles
             const settingsTabContent = document.getElementById('settings-tab');
@@ -410,9 +466,7 @@ const vscode = acquireVsCodeApi();
             const leftMenuTitle = document.querySelector('.left-menu-title');
             if (leftMenuTitle) leftMenuTitle.textContent = t('analyzedFiles');
             
-            // Update export button
-            const exportButton = document.querySelector('.export-button');
-            if (exportButton) exportButton.innerHTML = '📤 ' + t('export');
+            // Export button now uses an image icon from the template, no need to update innerHTML
             
             // Update export menu items
             const exportMenuItems = document.querySelectorAll('.export-menu-item');
@@ -965,7 +1019,7 @@ const vscode = acquireVsCodeApi();
                     bugsList.appendChild(createQualityItem(bug));
                 });
             } else {
-                bugsList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron posibles bugs</p>';
+                bugsList.innerHTML = '<p style="color: #858585; font-size: 12px;">' + t('noBugsFound') + '</p>';
             }
 
             // Update improvements list
@@ -976,7 +1030,7 @@ const vscode = acquireVsCodeApi();
                     improvementsList.appendChild(createQualityItem(improvement));
                 });
             } else {
-                improvementsList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron oportunidades de mejora</p>';
+                improvementsList.innerHTML = '<p style="color: #858585; font-size: 12px;">' + t('noImprovementsFound') + '</p>';
             }
 
             // Update performance list
@@ -987,7 +1041,7 @@ const vscode = acquireVsCodeApi();
                     performanceList.appendChild(createQualityItem(perf));
                 });
             } else {
-                performanceList.innerHTML = '<p style="color: #858585; font-size: 12px;">No se encontraron problemas de rendimiento</p>';
+                performanceList.innerHTML = '<p style="color: #858585; font-size: 12px;">' + t('noPerformanceIssues') + '</p>';
             }
 
             // Update best practices list
@@ -998,10 +1052,10 @@ const vscode = acquireVsCodeApi();
                     bestPracticesList.appendChild(createQualityItem(practice));
                 });
             } else {
-                bestPracticesList.innerHTML = '<p style="color: #858585; font-size: 12px;">El código sigue las mejores prácticas</p>';
+                bestPracticesList.innerHTML = '<p style="color: #858585; font-size: 12px;">' + t('followsBestPractices') + '</p>';
             }
 
-            showStatusMessage('Análisis de calidad completado', 'success');
+            showStatusMessage(t('qualityAnalysisComplete'), 'success');
         }
 
         function createQualityItem(item) {
@@ -1057,7 +1111,7 @@ const vscode = acquireVsCodeApi();
                 
                 const suggestionTitle = document.createElement('div');
                 suggestionTitle.className = 'quality-item-suggestion-title';
-                suggestionTitle.textContent = '💡 Sugerencia:';
+                suggestionTitle.textContent = '💡 ' + t('suggestion');
                 
                 const suggestionText = document.createElement('div');
                 suggestionText.className = 'quality-item-suggestion-text';
@@ -1315,7 +1369,7 @@ const vscode = acquireVsCodeApi();
                         g.appendChild(text);
                         
                         // File extension badge in bottom-right corner
-                        const extension = this.getFileExtension(node.label);
+                        const extension = this.getFileExtension(node.fileName || node.label);
                         if (extension) {
                             const badgeWidth = 28;
                             const badgeHeight = 14;
@@ -1710,6 +1764,18 @@ const vscode = acquireVsCodeApi();
                     hideEmptyState();
                     showDiagramLoader();
                     
+                    // Clear the current diagram immediately
+                    const svg = document.getElementById('diagram-svg');
+                    if (svg) {
+                        svg.innerHTML = '';
+                    }
+                    
+                    // Clear diagram renderer
+                    if (diagramRenderer) {
+                        diagramRenderer.nodes.clear();
+                        diagramRenderer.edges = [];
+                    }
+                    
                     currentDiagramData = message.data;
                     
                     // Store analysis data for details panel
@@ -1781,15 +1847,20 @@ const vscode = acquireVsCodeApi();
                     currentDiagramData = message.data;
                     
                     // Store ALL analysis data from cache
+                    console.log('[Webview] message.analyses:', message.analyses);
                     if (message.analyses && Array.isArray(message.analyses)) {
+                        console.log('[Webview] Processing', message.analyses.length, 'analyses');
                         message.analyses.forEach(item => {
+                            console.log('[Webview] Analysis item:', item);
                             if (item.analysis && item.analysis.currentFile) {
                                 const fileName = item.analysis.currentFile.name;
                                 const fileId = sanitizeId(fileName);
+                                console.log('[Webview] Storing analysis for fileName:', fileName, 'fileId:', fileId);
                                 analysisDataMap.set(fileId, item.analysis);
                                 analysisDataMap.set(fileName, item.analysis);
                             }
                         });
+                        console.log('[Webview] analysisDataMap after loading:', Array.from(analysisDataMap.keys()));
                     }
                     
                     // Update file visibility map and analyzed files list
@@ -1809,9 +1880,13 @@ const vscode = acquireVsCodeApi();
                             console.log('[Webview] Rendering diagram with', currentDiagramData.nodes.length, 'nodes');
                             diagramRenderer.render(currentDiagramData);
                         } else {
-                            // No diagram or no nodes, show empty state
-                            console.log('[Webview] No diagram to render, showing empty state');
-                            showEmptyState();
+                            // No nodes visible (all files might be hidden)
+                            // Just clear the diagram without showing empty state message
+                            console.log('[Webview] No visible nodes, clearing diagram');
+                            const svg = document.getElementById('diagram-svg');
+                            if (svg) {
+                                svg.innerHTML = '';
+                            }
                         }
                         
                         // Hide loading indicator
@@ -2189,8 +2264,29 @@ const vscode = acquireVsCodeApi();
             const title = document.getElementById('details-panel-title');
             const content = document.getElementById('details-panel-content');
             
-            // Get analysis data for this node
-            const analysisData = analysisDataMap.get(node.id) || analysisDataMap.get(node.label);
+            console.log('[showDetailsPanel] node:', node);
+            console.log('[showDetailsPanel] node.id:', node.id);
+            console.log('[showDetailsPanel] node.label:', node.label);
+            console.log('[showDetailsPanel] node.fileName:', node.fileName);
+            console.log('[showDetailsPanel] analysisDataMap keys:', Array.from(analysisDataMap.keys()));
+            
+            // Get analysis data for this node - try multiple keys
+            let analysisData = analysisDataMap.get(node.id) || 
+                              analysisDataMap.get(node.label) ||
+                              analysisDataMap.get(node.fileName);
+            
+            // If still not found, try to find by partial match
+            if (!analysisData) {
+                for (const [key, value] of analysisDataMap.entries()) {
+                    if (key.includes(node.label) || node.label.includes(key)) {
+                        analysisData = value;
+                        console.log('[showDetailsPanel] Found analysis by partial match:', key);
+                        break;
+                    }
+                }
+            }
+            
+            console.log('[showDetailsPanel] analysisData found:', !!analysisData);
             
             if (!analysisData) {
                 // No analysis data available
@@ -2398,10 +2494,136 @@ const vscode = acquireVsCodeApi();
         }
 
         function resetZoom() {
-            zoomLevel = 1;
-            panX = 0;
-            panY = 0;
-            applyZoom();
+            // Show loading indicator
+            showDiagramLoader();
+            
+            // Hide current diagram
+            const svg = document.getElementById('diagram-svg');
+            if (svg) {
+                svg.innerHTML = '';
+            }
+            
+            // Clear diagram renderer
+            if (diagramRenderer) {
+                diagramRenderer.nodes.clear();
+                diagramRenderer.edges = [];
+            }
+            
+            // Request diagram reload with AI optimization
+            console.log('[Webview] Requesting diagram reload with AI optimization');
+            vscode.postMessage({
+                command: 'reloadDiagramWithAI'
+            });
+        }
+
+        function confirmDeleteDiagram() {
+            // Show custom confirmation modal
+            const modal = document.getElementById('confirmation-modal');
+            const title = document.getElementById('confirmation-title');
+            const message = document.getElementById('confirmation-message');
+            const confirmBtn = document.getElementById('confirmation-confirm');
+            const cancelBtn = document.getElementById('confirmation-cancel');
+            
+            if (!modal || !title || !message || !confirmBtn || !cancelBtn) {
+                console.error('[Webview] Confirmation modal elements not found');
+                return;
+            }
+            
+            // Set modal content
+            title.textContent = t('clear') || 'Clear Diagram';
+            message.textContent = t('confirmClearDiagram') || 'Are you sure you want to clear the diagram? This will remove all analyses and cannot be undone.';
+            
+            // Update button texts
+            cancelBtn.textContent = t('cancel') || 'Cancel';
+            confirmBtn.textContent = t('clear') || 'Clear';
+            
+            // Show modal
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+            
+            // Handle confirm
+            const handleConfirm = () => {
+                console.log('[Webview] User confirmed diagram deletion');
+                
+                // Hide modal
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+                
+                // Send command to backend to clear diagram
+                vscode.postMessage({
+                    command: 'clearDiagram'
+                });
+                
+                // Clear the diagram immediately in the UI
+                const svg = document.getElementById('diagram-svg');
+                if (svg) {
+                    svg.innerHTML = '';
+                }
+                
+                // Clear diagram renderer
+                if (diagramRenderer) {
+                    diagramRenderer.nodes.clear();
+                    diagramRenderer.edges = [];
+                }
+                
+                // Show empty state
+                showEmptyState();
+                
+                // Clear security and quality tabs
+                clearSecurityTab();
+                clearQualityTab();
+                
+                // Remove event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            
+            // Handle cancel
+            const handleCancel = () => {
+                console.log('[Webview] User cancelled diagram deletion');
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+                
+                // Remove event listeners
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            
+            // Add event listeners
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+        }
+
+        function clearSecurityTab() {
+            // Reset security summary
+            const securitySummary = document.getElementById('security-summary');
+            if (securitySummary) {
+                securitySummary.style.display = 'none';
+            }
+            
+            const securityFindings = document.getElementById('security-findings');
+            if (securityFindings) {
+                securityFindings.style.display = 'none';
+            }
+            
+            const securityEmptyState = document.getElementById('security-empty-state');
+            if (securityEmptyState) {
+                securityEmptyState.style.display = 'flex';
+            }
+        }
+
+        function clearQualityTab() {
+            // Hide quality content
+            const qualityContent = document.getElementById('quality-content');
+            if (qualityContent) {
+                qualityContent.style.display = 'none';
+            }
+            
+            // Show quality empty state
+            const qualityEmptyState = document.getElementById('quality-empty-state');
+            if (qualityEmptyState) {
+                qualityEmptyState.style.display = 'flex';
+            }
         }
 
         function applyZoom() {
@@ -2736,6 +2958,13 @@ const vscode = acquireVsCodeApi();
             if (resetZoomButton) {
                 resetZoomButton.addEventListener('click', resetZoom);
                 console.log('[Webview] Added listener to resetZoomButton');
+            }
+
+            const deleteDiagramButton = document.getElementById('delete-diagram-button');
+            console.log('[Webview] deleteDiagramButton:', deleteDiagramButton);
+            if (deleteDiagramButton) {
+                deleteDiagramButton.addEventListener('click', confirmDeleteDiagram);
+                console.log('[Webview] Added listener to deleteDiagramButton');
             }
 
             // Export menu items

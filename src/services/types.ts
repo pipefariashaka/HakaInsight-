@@ -67,7 +67,7 @@ export interface ISidebarPanelManager {
   /**
    * Switch between tabs in the panel
    */
-  switchTab(tabName: 'diagram' | 'settings'): void;
+  switchTab(tabName: 'diagram' | 'settings' | 'security' | 'quality' | 'about'): void;
 
   /**
    * Update the diagram displayed in the panel

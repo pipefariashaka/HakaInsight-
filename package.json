@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/hakalab/haka-insight#readme",
   "license": "MIT",
-  "icon": "media/icon.png",
+  "icon": "media/icon.svg",
   "galleryBanner": {
     "color": "#0a0e27",
     "theme": "dark"

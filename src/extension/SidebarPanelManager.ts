@@ -74,6 +74,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
       }
     );
 
+    // Set panel icon
+    this.panel.iconPath = vscode.Uri.file(path.join(context.extensionPath, 'media', 'icon.svg'));
+
     this.panel.webview.html = this.getWebviewContent();
     this.restoreActiveTab();
 
@@ -90,7 +93,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
     });
   }
 
-  switchTab(tabName: 'diagram' | 'settings' | 'security' | 'quality'): void {
+  switchTab(tabName: 'diagram' | 'settings' | 'security' | 'quality' | 'about'): void {
     if (this.globalState) {
       this.globalState.update(ACTIVE_TAB_STATE_KEY, tabName);
     }
@@ -312,13 +315,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
           clearLanguageCache();
           console.log('[SidebarPanelManager] Language changed and cache cleared');
           
-          // Notify user that they should re-analyze for language change to take effect
-          const languageName = message.language === 'es' ? 'espaÃ±ol' : 'English';
-          vscode.window.showInformationMessage(
-            message.language === 'es' 
-              ? `Idioma cambiado a espaÃ±ol. Los anÃ¡lisis existentes permanecen en su idioma original. Para ver anÃ¡lisis en espaÃ±ol, vuelva a analizar los archivos.`
-              : `Language changed to English. Existing analyses remain in their original language. To see analyses in English, re-analyze the files.`
-          );
+          // Language changed - no notification needed as UI updates automatically
         }
         break;
       case 'deepenAnalysis':
@@ -384,6 +381,17 @@ export class SidebarPanelManager implements ISidebarPanelManager {
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             vscode.window.showErrorMessage(`Failed to save model: ${errorMessage}`);
+          }
+        }
+        break;
+      case 'reloadDiagramWithAI':
+        if (this.onApplyLayoutCallback) {
+          try {
+            // Force AI optimization by calling applyLayout with 'ai' mode
+            await this.onApplyLayoutCallback('ai');
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('[SidebarPanelManager] Failed to reload diagram with AI:', errorMessage);
           }
         }
         break;
@@ -612,7 +620,7 @@ export class SidebarPanelManager implements ISidebarPanelManager {
 
   private restoreActiveTab(): void {
     if (this.globalState) {
-      const savedTab = this.globalState.get<'diagram' | 'settings'>(ACTIVE_TAB_STATE_KEY);
+      const savedTab = this.globalState.get<'diagram' | 'settings' | 'security' | 'quality' | 'about'>(ACTIVE_TAB_STATE_KEY);
       if (savedTab) {
         this.switchTab(savedTab);
       }
@@ -642,6 +650,9 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         <style>
           ${this.templateLoader.loadStyle('quality.css')}
         </style>
+        <style>
+          ${this.templateLoader.loadStyle('about.css')}
+        </style>
       `;
 
       // Load JavaScript
@@ -654,14 +665,49 @@ export class SidebarPanelManager implements ISidebarPanelManager {
       // Load all template parts
       const modals = this.templateLoader.loadTemplate('modals.html');
       const tabs = this.templateLoader.loadTemplate('tabs.html');
-      const diagramTab = this.templateLoader.loadTemplate('diagram-tab.html');
+      let diagramTab = this.templateLoader.loadTemplate('diagram-tab.html');
       const settingsTab = this.templateLoader.loadTemplate('settings-tab.html');
       const securityTab = this.templateLoader.loadTemplate('security-tab.html');
       const qualityTab = this.templateLoader.loadTemplate('quality-tab.html');
+      let aboutTab = this.templateLoader.loadTemplate('about-tab.html');
 
       // Get workspace identifier to prevent caching between different workspaces
       const workspaceId = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || 'no-workspace';
       const workspaceHash = Buffer.from(workspaceId).toString('base64').substring(0, 16);
+
+      // Get Haka logo URI for webview
+      const hakaLogoUri = this.panel?.webview.asWebviewUri(
+        vscode.Uri.file(path.join(this.context!.extensionPath, 'media', 'Haka.png'))
+      );
+
+      // Get menu icon URI for webview
+      const menuIconUri = this.panel?.webview.asWebviewUri(
+        vscode.Uri.file(path.join(this.context!.extensionPath, 'media', 'menu.png'))
+      );
+
+      // Get export icon URI for webview
+      const exportIconUri = this.panel?.webview.asWebviewUri(
+        vscode.Uri.file(path.join(this.context!.extensionPath, 'media', 'exportar.png'))
+      );
+
+      // Get delete icon URI for webview
+      const deleteIconUri = this.panel?.webview.asWebviewUri(
+        vscode.Uri.file(path.join(this.context!.extensionPath, 'media', 'borrar.png'))
+      );
+
+      console.log('[SidebarPanelManager] Menu icon URI:', menuIconUri?.toString());
+      console.log('[SidebarPanelManager] Export icon path:', path.join(this.context!.extensionPath, 'media', 'exportar.png'));
+      console.log('[SidebarPanelManager] Export icon URI:', exportIconUri?.toString());
+      console.log('[SidebarPanelManager] Delete icon URI:', deleteIconUri?.toString());
+      console.log('[SidebarPanelManager] Diagram tab before replace:', diagramTab.substring(0, 500));
+
+      // Replace placeholders in individual templates
+      diagramTab = diagramTab.replace(/\{\{MENU_ICON\}\}/g, menuIconUri?.toString() || '');
+      diagramTab = diagramTab.replace(/\{\{EXPORT_ICON\}\}/g, exportIconUri?.toString() || '');
+      diagramTab = diagramTab.replace(/\{\{DELETE_ICON\}\}/g, deleteIconUri?.toString() || '');
+      aboutTab = aboutTab.replace(/\{\{HAKA_LOGO\}\}/g, hakaLogoUri?.toString() || '');
+
+      console.log('[SidebarPanelManager] Diagram tab after replace:', diagramTab.substring(0, 500));
 
       // Load main template and replace placeholders
       const html = this.templateLoader.loadTemplateWithReplacements('main.html', {
@@ -672,7 +718,8 @@ export class SidebarPanelManager implements ISidebarPanelManager {
         'DIAGRAM_TAB': diagramTab,
         'SETTINGS_TAB': settingsTab,
         'SECURITY_TAB': securityTab,
-        'QUALITY_TAB': qualityTab
+        'QUALITY_TAB': qualityTab,
+        'ABOUT_TAB': aboutTab
       });
 
       return html;

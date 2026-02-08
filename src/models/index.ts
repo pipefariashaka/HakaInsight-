@@ -8,6 +8,7 @@
 export interface DiagramNode {
   id: string;
   label: string;
+  fileName?: string; // Full filename with extension for badge display
   filePath?: string;
   type: 'file' | 'module' | 'component';
   description?: string;

@@ -309,6 +309,15 @@ export class GeminiAPIClient implements IGeminiAPIClient {
     const nodes: any[] = [];
     const edges: any[] = [];
 
+    // Helper function to remove file extension from label
+    const removeExtension = (fileName: string): string => {
+      const lastDotIndex = fileName.lastIndexOf('.');
+      if (lastDotIndex > 0) {
+        return fileName.substring(0, lastDotIndex);
+      }
+      return fileName;
+    };
+
     // Create a unique ID for the current file based on its name
     const currentFileName = analysis.currentFile?.name || 'unknown';
     const currentFileId = this.sanitizeId(currentFileName);
@@ -317,7 +326,8 @@ export class GeminiAPIClient implements IGeminiAPIClient {
     if (analysis.currentFile) {
       nodes.push({
         id: currentFileId,
-        label: analysis.currentFile.name,
+        label: removeExtension(analysis.currentFile.name),
+        fileName: analysis.currentFile.name, // Keep full filename for extension badge
         type: 'file' as const,
         description: analysis.currentFile.description,
         isCurrentFile: true,
@@ -331,7 +341,8 @@ export class GeminiAPIClient implements IGeminiAPIClient {
         const depId = this.sanitizeId(dep.name);
         nodes.push({
           id: depId,
-          label: dep.name,
+          label: removeExtension(dep.name),
+          fileName: dep.name, // Keep full filename for extension badge
           type: 'file' as const,
           description: dep.description,
           path: dep.path,

@@ -86,3 +86,16 @@
             </div>
         </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmation-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center; z-index: 9999;">
+        <div class="confirmation-content" style="position: relative; background-color: #252526; border: 2px solid #dc143c; border-radius: 8px; padding: 32px; display: flex; flex-direction: column; align-items: center; gap: 20px; min-width: 400px; max-width: 500px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);">
+            <div class="confirmation-icon" style="font-size: 48px; line-height: 1;">⚠️</div>
+            <h4 class="confirmation-title" id="confirmation-title" data-i18n="clear" style="color: #dc143c; font-size: 18px; font-weight: 600; margin: 0; text-align: center;">Clear</h4>
+            <p class="confirmation-message" id="confirmation-message" data-i18n="confirmClearDiagram" style="color: #cccccc; font-size: 14px; margin: 0; text-align: center; line-height: 1.6;">Are you sure?</p>
+            <div class="confirmation-buttons" style="display: flex; gap: 12px; width: 100%; margin-top: 8px;">
+                <button class="confirmation-btn cancel-btn" id="confirmation-cancel" data-i18n="cancel" style="flex: 1; padding: 10px 20px; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; background-color: #3e3e42; color: #cccccc;">Cancel</button>
+                <button class="confirmation-btn confirm-btn" id="confirmation-confirm" data-i18n="clear" style="flex: 1; padding: 10px 20px; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; background-color: #dc143c; color: #ffffff;">Clear</button>
+            </div>
+        </div>
+    </div>

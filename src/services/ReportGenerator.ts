@@ -3,8 +3,10 @@
  * Generates HTML reports for security and quality analysis
  */
 
+import * as vscode from 'vscode';
 import { SecuritySummary } from './SecurityAnalysisManager';
 import { QualityFindings } from './QualityAnalysisManager';
+import { t, Language } from '../i18n/translations';
 
 export interface ReportTemplate {
   title: string;
@@ -14,12 +16,19 @@ export interface ReportTemplate {
 }
 
 export class ReportGenerator {
+  private context: vscode.ExtensionContext;
+  
+  constructor(context: vscode.ExtensionContext) {
+    this.context = context;
+  }
+  
   /**
    * Generate security analysis report
    */
   async generateSecurityReport(findings: SecuritySummary): Promise<string> {
+    const title = await t('securityReport', this.context);
     const template: ReportTemplate = {
-      title: 'Reporte de Seguridad Haka Insight',
+      title: `${title} Haka Insight`,
       type: 'security',
       data: findings,
       timestamp: new Date().toISOString()
@@ -32,8 +41,9 @@ export class ReportGenerator {
    * Generate code quality report
    */
   async generateQualityReport(findings: QualityFindings): Promise<string> {
+    const title = await t('qualityReport', this.context);
     const template: ReportTemplate = {
-      title: 'Reporte de Calidad Haka Insight',
+      title: `${title} Haka Insight`,
       type: 'quality',
       data: findings,
       timestamp: new Date().toISOString()
@@ -45,7 +55,7 @@ export class ReportGenerator {
   /**
    * Build HTML for security report
    */
-  private buildSecurityHTML(template: ReportTemplate): string {
+  private async buildSecurityHTML(template: ReportTemplate): Promise<string> {
     const findings = template.data as SecuritySummary;
     const currentDate = new Date(template.timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -54,6 +64,23 @@ export class ReportGenerator {
       hour: '2-digit',
       minute: '2-digit'
     });
+
+    // Get translations
+    const generatedOn = await t('generatedOn', this.context);
+    const executiveSummary = await t('executiveSummary', this.context);
+    const totalFindingsLabel = await t('totalFindings', this.context);
+    const riskLevelLabel = await t('riskLevel', this.context);
+    const filesAnalyzedLabel = await t('filesAnalyzed', this.context);
+    const severityBreakdownLabel = await t('severityBreakdown', this.context);
+    const highLabel = await t('riskHigh', this.context);
+    const mediumLabel = await t('riskMedium', this.context);
+    const lowLabel = await t('riskLow', this.context);
+    const highSeverityFindingsLabel = await t('highSeverityFindings', this.context);
+    const mediumSeverityFindingsLabel = await t('mediumSeverityFindings', this.context);
+    const lowSeverityFindingsLabel = await t('lowSeverityFindings', this.context);
+    const analyzedFilesLabel = await t('analyzedFiles', this.context);
+    const generatedByLabel = await t('generatedBy', this.context);
+    const reportDateLabel = await t('reportDate', this.context);
 
     // Group findings by severity
     const highFindings = findings.findings.filter((f: any) => f.severity === 'high');
@@ -85,46 +112,46 @@ export class ReportGenerator {
   <div class="container">
     <header>
       <h1>🔒 ${template.title}</h1>
-      <p>Generated on ${currentDate}</p>
+      <p>${generatedOn} ${currentDate}</p>
     </header>
 
     <div class="content">
       <div class="summary">
-        <h2>Executive Summary</h2>
+        <h2>${executiveSummary}</h2>
         <div class="metrics">
           <div class="metric">
             <div class="metric-number">${findings.totalFindings}</div>
-            <div class="metric-label">Total Findings</div>
+            <div class="metric-label">${totalFindingsLabel}</div>
           </div>
           <div class="metric">
             <div class="metric-number" style="color: ${riskColor}">${findings.riskLevel.toUpperCase()}</div>
-            <div class="metric-label">Risk Level</div>
+            <div class="metric-label">${riskLevelLabel}</div>
           </div>
           <div class="metric">
             <div class="metric-number">${findings.analyzedFiles.length}</div>
-            <div class="metric-label">Files Analyzed</div>
+            <div class="metric-label">${filesAnalyzedLabel}</div>
           </div>
         </div>
 
         <div class="severity-breakdown">
-          <h3>Severity Breakdown</h3>
+          <h3>${severityBreakdownLabel}</h3>
           <div class="severity-bars">
             <div class="severity-bar">
-              <span class="severity-label">High</span>
+              <span class="severity-label">${highLabel}</span>
               <div class="bar-container">
                 <div class="bar high" style="width: ${(highFindings.length / findings.totalFindings * 100) || 0}%"></div>
               </div>
               <span class="severity-count">${highFindings.length}</span>
             </div>
             <div class="severity-bar">
-              <span class="severity-label">Medium</span>
+              <span class="severity-label">${mediumLabel}</span>
               <div class="bar-container">
                 <div class="bar medium" style="width: ${(mediumFindings.length / findings.totalFindings * 100) || 0}%"></div>
               </div>
               <span class="severity-count">${mediumFindings.length}</span>
             </div>
             <div class="severity-bar">
-              <span class="severity-label">Low</span>
+              <span class="severity-label">${lowLabel}</span>
               <div class="bar-container">
                 <div class="bar low" style="width: ${(lowFindings.length / findings.totalFindings * 100) || 0}%"></div>
               </div>
@@ -135,22 +162,22 @@ export class ReportGenerator {
       </div>
 
       <div class="findings-section">
-        <h2>🔴 High Severity Findings</h2>
-        ${this.generateSecurityFindingsHTML(highFindings, 'high')}
+        <h2>🔴 ${highSeverityFindingsLabel}</h2>
+        ${await this.generateSecurityFindingsHTML(highFindings, 'high')}
       </div>
 
       <div class="findings-section">
-        <h2>🟡 Medium Severity Findings</h2>
-        ${this.generateSecurityFindingsHTML(mediumFindings, 'medium')}
+        <h2>🟡 ${mediumSeverityFindingsLabel}</h2>
+        ${await this.generateSecurityFindingsHTML(mediumFindings, 'medium')}
       </div>
 
       <div class="findings-section">
-        <h2>🟢 Low Severity Findings</h2>
-        ${this.generateSecurityFindingsHTML(lowFindings, 'low')}
+        <h2>🟢 ${lowSeverityFindingsLabel}</h2>
+        ${await this.generateSecurityFindingsHTML(lowFindings, 'low')}
       </div>
 
       <div class="analyzed-files">
-        <h2>📁 Analyzed Files</h2>
+        <h2>📁 ${analyzedFilesLabel}</h2>
         <ul>
           ${findings.analyzedFiles.map((file: any) => `<li>${file}</li>`).join('')}
         </ul>
@@ -158,8 +185,8 @@ export class ReportGenerator {
     </div>
 
     <footer>
-      <p>Generated by Haka Insight - Code Architecture Analyzer</p>
-      <p>Report Date: ${currentDate}</p>
+      <p>${generatedByLabel}</p>
+      <p>${reportDateLabel}: ${currentDate}</p>
     </footer>
   </div>
 </body>
@@ -169,7 +196,7 @@ export class ReportGenerator {
   /**
    * Build HTML for quality report
    */
-  private buildQualityHTML(template: ReportTemplate): string {
+  private async buildQualityHTML(template: ReportTemplate): Promise<string> {
     const findings = template.data as QualityFindings;
     const currentDate = new Date(template.timestamp).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -178,6 +205,22 @@ export class ReportGenerator {
       hour: '2-digit',
       minute: '2-digit'
     });
+
+    // Get translations
+    const generatedOn = await t('generatedOn', this.context);
+    const qualityOverviewLabel = await t('qualityOverview', this.context);
+    const qualityScoreLabel = await t('qualityScore', this.context);
+    const totalIssuesLabel = await t('totalIssues', this.context);
+    const filesAnalyzedLabel = await t('filesAnalyzed', this.context);
+    const issueBreakdownLabel = await t('issueBreakdown', this.context);
+    const bugsLabel = await t('bugs', this.context);
+    const improvementsLabel = await t('improvements', this.context);
+    const performanceLabel = await t('performance', this.context);
+    const bestPracticesLabel = await t('bestPractices', this.context);
+    const performanceIssuesLabel = await t('performanceIssues', this.context);
+    const analyzedFilesLabel = await t('analyzedFiles', this.context);
+    const generatedByLabel = await t('generatedBy', this.context);
+    const reportDateLabel = await t('reportDate', this.context);
 
     // Calculate score color
     const scoreColor = findings.qualityScore >= 80 ? '#27ae60' : 
@@ -199,53 +242,53 @@ export class ReportGenerator {
   <div class="container">
     <header>
       <h1>📊 ${template.title}</h1>
-      <p>Generated on ${currentDate}</p>
+      <p>${generatedOn} ${currentDate}</p>
     </header>
 
     <div class="content">
       <div class="summary">
-        <h2>Quality Overview</h2>
+        <h2>${qualityOverviewLabel}</h2>
         <div class="metrics">
           <div class="metric">
             <div class="metric-number" style="color: ${scoreColor}">${findings.qualityScore}</div>
-            <div class="metric-label">Quality Score</div>
+            <div class="metric-label">${qualityScoreLabel}</div>
           </div>
           <div class="metric">
             <div class="metric-number">${findings.totalIssues}</div>
-            <div class="metric-label">Total Issues</div>
+            <div class="metric-label">${totalIssuesLabel}</div>
           </div>
           <div class="metric">
             <div class="metric-number">${findings.analyzedFiles.length}</div>
-            <div class="metric-label">Files Analyzed</div>
+            <div class="metric-label">${filesAnalyzedLabel}</div>
           </div>
         </div>
 
         <div class="quality-breakdown">
-          <h3>Issue Breakdown</h3>
+          <h3>${issueBreakdownLabel}</h3>
           <div class="quality-bars">
             <div class="quality-bar">
-              <span class="quality-label">🐛 Bugs</span>
+              <span class="quality-label">🐛 ${bugsLabel}</span>
               <div class="bar-container">
                 <div class="bar bugs" style="width: ${(findings.bugs.length / findings.totalIssues * 100) || 0}%"></div>
               </div>
               <span class="quality-count">${findings.bugs.length}</span>
             </div>
             <div class="quality-bar">
-              <span class="quality-label">💡 Improvements</span>
+              <span class="quality-label">💡 ${improvementsLabel}</span>
               <div class="bar-container">
                 <div class="bar improvements" style="width: ${(findings.improvements.length / findings.totalIssues * 100) || 0}%"></div>
               </div>
               <span class="quality-count">${findings.improvements.length}</span>
             </div>
             <div class="quality-bar">
-              <span class="quality-label">⚡ Performance</span>
+              <span class="quality-label">⚡ ${performanceLabel}</span>
               <div class="bar-container">
                 <div class="bar performance" style="width: ${(findings.performance.length / findings.totalIssues * 100) || 0}%"></div>
               </div>
               <span class="quality-count">${findings.performance.length}</span>
             </div>
             <div class="quality-bar">
-              <span class="quality-label">✨ Best Practices</span>
+              <span class="quality-label">✨ ${bestPracticesLabel}</span>
               <div class="bar-container">
                 <div class="bar best-practices" style="width: ${(findings.bestPractices.length / findings.totalIssues * 100) || 0}%"></div>
               </div>
@@ -256,27 +299,27 @@ export class ReportGenerator {
       </div>
 
       <div class="findings-section">
-        <h2>🐛 Bugs</h2>
-        ${this.generateQualityIssuesHTML(findings.bugs, 'bug')}
+        <h2>🐛 ${bugsLabel}</h2>
+        ${await this.generateQualityIssuesHTML(findings.bugs, 'bug')}
       </div>
 
       <div class="findings-section">
-        <h2>💡 Improvements</h2>
-        ${this.generateQualityIssuesHTML(findings.improvements, 'improvement')}
+        <h2>💡 ${improvementsLabel}</h2>
+        ${await this.generateQualityIssuesHTML(findings.improvements, 'improvement')}
       </div>
 
       <div class="findings-section">
-        <h2>⚡ Performance Issues</h2>
-        ${this.generateQualityIssuesHTML(findings.performance, 'performance')}
+        <h2>⚡ ${performanceIssuesLabel}</h2>
+        ${await this.generateQualityIssuesHTML(findings.performance, 'performance')}
       </div>
 
       <div class="findings-section">
-        <h2>✨ Best Practices</h2>
-        ${this.generateQualityIssuesHTML(findings.bestPractices, 'best-practice')}
+        <h2>✨ ${bestPracticesLabel}</h2>
+        ${await this.generateQualityIssuesHTML(findings.bestPractices, 'best-practice')}
       </div>
 
       <div class="analyzed-files">
-        <h2>📁 Analyzed Files</h2>
+        <h2>📁 ${analyzedFilesLabel}</h2>
         <ul>
           ${findings.analyzedFiles.map(file => `<li>${file}</li>`).join('')}
         </ul>
@@ -284,8 +327,8 @@ export class ReportGenerator {
     </div>
 
     <footer>
-      <p>Generated by Haka Insight - Code Architecture Analyzer</p>
-      <p>Report Date: ${currentDate}</p>
+      <p>${generatedByLabel}</p>
+      <p>${reportDateLabel}: ${currentDate}</p>
     </footer>
   </div>
 </body>
@@ -295,9 +338,17 @@ export class ReportGenerator {
   /**
    * Generate HTML for security findings
    */
-  private generateSecurityFindingsHTML(findings: any[], severity: string): string {
+  private async generateSecurityFindingsHTML(findings: any[], severity: string): Promise<string> {
     if (findings.length === 0) {
-      return `<p class="no-findings">No ${severity} severity findings</p>`;
+      let noFindingsMsg = '';
+      if (severity === 'high') {
+        noFindingsMsg = await t('noHighSeverityFindings', this.context);
+      } else if (severity === 'medium') {
+        noFindingsMsg = await t('noMediumSeverityFindings', this.context);
+      } else {
+        noFindingsMsg = await t('noLowSeverityFindings', this.context);
+      }
+      return `<p class="no-findings">${noFindingsMsg}</p>`;
     }
 
     return findings.map(f => `
@@ -314,10 +365,22 @@ export class ReportGenerator {
   /**
    * Generate HTML for quality issues
    */
-  private generateQualityIssuesHTML(issues: any[], type: string): string {
+  private async generateQualityIssuesHTML(issues: any[], type: string): Promise<string> {
     if (issues.length === 0) {
-      return `<p class="no-findings">No ${type} issues found</p>`;
+      let noIssuesMsg = '';
+      if (type === 'bug') {
+        noIssuesMsg = await t('noBugsFound', this.context);
+      } else if (type === 'improvement') {
+        noIssuesMsg = await t('noImprovementIssues', this.context);
+      } else if (type === 'performance') {
+        noIssuesMsg = await t('noPerformanceIssuesFound', this.context);
+      } else {
+        noIssuesMsg = await t('noBestPracticeIssues', this.context);
+      }
+      return `<p class="no-findings">${noIssuesMsg}</p>`;
     }
+
+    const suggestionLabel = await t('suggestion', this.context);
 
     return issues.map(issue => `
       <div class="issue-card ${issue.severity}">
@@ -330,7 +393,7 @@ export class ReportGenerator {
           <span class="issue-file">📄 ${issue.file}${issue.line ? `:${issue.line}` : ''}</span>
         </div>
         <div class="issue-suggestion">
-          <strong>💡 Suggestion:</strong> ${issue.suggestion}
+          <strong>💡 ${suggestionLabel}</strong> ${issue.suggestion}
         </div>
       </div>
     `).join('');

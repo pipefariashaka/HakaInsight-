@@ -46,6 +46,7 @@ interface AnalysisCacheData {
 	version: string;
 	timestamp: number;
 	analyses: [string, CachedAnalysis][];
+	fileVisibility?: Record<string, boolean>;
 	securityFindings?: {
 		findings: any[];
 		analyzedFiles: string[];
@@ -76,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
 	analysisCache = new AnalysisCache(context);
 	securityAnalysisManager = new SecurityAnalysisManager();
 	qualityAnalysisManager = new QualityAnalysisManager();
-	reportGenerator = new ReportGenerator();
+	reportGenerator = new ReportGenerator(context);
 
 	// DON'T load cache automatically here - it will be loaded when panel opens
 	// This prevents mixing data from different projects
@@ -124,7 +125,7 @@ export function activate(context: vscode.ExtensionContext) {
 			if (sidebarPanelManager) {
 				const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
 				if (allAnalyzedFiles.length > 0) {
-					const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, new Map(), 'auto');
+					const comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, new Map(), 'auto');
 					sidebarPanelManager.updateDiagramWithCache(comprehensiveDiagram, allAnalyzedFiles, new Map());
 				}
 			}
@@ -154,11 +155,20 @@ export function activate(context: vscode.ExtensionContext) {
 					analysisCache.clear();
 					securityAnalysisManager.clear();
 					qualityAnalysisManager.clear();
+					fileVisibilityMap.clear();
 					
 					// Restore analyses
 					cachedData.analyses.forEach(([filePath, cachedAnalysis]) => {
 						analysisCache.saveAnalysis(filePath, cachedAnalysis.analysisResult);
 					});
+					
+					// Restore file visibility
+					if (cachedData.fileVisibility) {
+						Object.entries(cachedData.fileVisibility).forEach(([filePath, visible]) => {
+							fileVisibilityMap.set(filePath, visible);
+						});
+						console.log('[Extension] File visibility restored:', fileVisibilityMap.size, 'files');
+					}
 					
 					// Restore security findings
 					if (cachedData.securityFindings) {
@@ -195,7 +205,7 @@ export function activate(context: vscode.ExtensionContext) {
 					const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
 					
 					// Build diagram from cache with current visibility settings
-					let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+					let comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 					
 					// If AI mode is selected and API key is available, optimize with Gemini
 					if (effectiveLayoutMode === 'ai') {
@@ -267,7 +277,7 @@ export function activate(context: vscode.ExtensionContext) {
 				const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
 				
 				// Build diagram from cache with current visibility settings
-				let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+				let comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 				
 				// If AI mode is selected and API key is available, optimize with Gemini
 				if (effectiveLayoutMode === 'ai') {
@@ -497,7 +507,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			
 			// Build diagram structure for AI analysis
-			const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+			const comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
 			
 			// Send to Gemini for optimization
 			const model = await storageManager.getModel(context);
@@ -513,7 +523,7 @@ export function activate(context: vscode.ExtensionContext) {
 			sidebarPanelManager.updateDiagram(optimizedLayout);
 		} else {
 			// Rebuild diagram with selected layout mode
-			const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
+			const comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap);
 			
 			// Add layout mode to diagram metadata
 			comprehensiveDiagram.layoutMode = mode as any;
@@ -701,7 +711,7 @@ export function activate(context: vscode.ExtensionContext) {
 		// Rebuild diagram with current visibility settings
 		const allAnalyzedFiles = analysisCache.getAllAnalyzedFiles();
 		const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
-		const comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
+		const comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, null, fileVisibilityMap, effectiveLayoutMode);
 		
 		// Get all analyses from cache
 		const allAnalyses = new Map<string, any>();
@@ -934,7 +944,7 @@ export function activate(context: vscode.ExtensionContext) {
 				sidebarPanelManager.createPanel(context, analysisCache);
 				sidebarPanelManager.switchTab('diagram');
 				sidebarPanelManager.showWarning(await t('diagramCleared', context));
-				vscode.window.showInformationMessage(await t('diagramCleared', context));
+				console.log('[Extension] Diagram cleared');
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				vscode.window.showErrorMessage(`${await t('failedToClearDiagram', context)}: ${errorMessage}`);
@@ -953,7 +963,7 @@ export function activate(context: vscode.ExtensionContext) {
 				securityAnalysisManager.clear();
 				sidebarPanelManager.createPanel(context, analysisCache);
 				sidebarPanelManager.switchTab('diagram');
-				vscode.window.showInformationMessage('Analysis cache cleared successfully');
+				console.log('[Extension] Analysis cache cleared successfully');
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				vscode.window.showErrorMessage(`Failed to clear cache: ${errorMessage}`);
@@ -984,11 +994,14 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		sidebarPanelManager.createPanel(context);
 		sidebarPanelManager.switchTab('diagram');
 		
+		// Send loading message to webview (analyzing file)
+		sidebarPanelManager.sendMessage({ command: 'diagramLoading', hasDiagram: true });
+		
 		// Send selected model to webview
 		sidebarPanelManager.setSelectedModel(model);
 
-		// Show loading message
-		vscode.window.showInformationMessage(await t('analyzingFile', context));
+		// Show loading message (only in console)
+		console.log('[Extension] Analyzing file...');
 
 		// Read file content
 		const fileContent = await vscode.workspace.fs.readFile(fileUri);
@@ -1053,7 +1066,7 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		
 		// Get effective layout mode (with fallback if no API key)
 		const effectiveLayoutMode = await getEffectiveLayoutMode(context, storageManager);
-		let comprehensiveDiagram = buildComprehensiveDiagram(analysisCache, analysisResult, fileVisibilityMap, effectiveLayoutMode);
+		let comprehensiveDiagram = await buildComprehensiveDiagram(analysisCache, analysisResult, fileVisibilityMap, effectiveLayoutMode);
 
 		// If AI mode is selected and API key is available, optimize with Gemini
 		if (effectiveLayoutMode === 'ai') {
@@ -1086,8 +1099,17 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		// Schedule persistence with debouncing
 		await persistenceManager.scheduleSave(comprehensiveDiagram);
 
-		// Update panel with complete analysis and file list
-		sidebarPanelManager.updateDiagramWithAnalysis(comprehensiveDiagram, analysisResult, allAnalyzedFiles);
+		// Get all analyses from cache to send to webview
+		const allAnalyses = new Map<string, any>();
+		allAnalyzedFiles.forEach(file => {
+			const analysis = analysisCache.getAnalysis(file.path);
+			if (analysis) {
+				allAnalyses.set(file.path, analysis);
+			}
+		});
+
+		// Update panel with complete analysis and ALL cached analyses
+		sidebarPanelManager.updateDiagramWithCache(comprehensiveDiagram, allAnalyzedFiles, allAnalyses);
 		
 		// Update security summary
 		sidebarPanelManager.updateSecuritySummary(securitySummary);
@@ -1100,7 +1122,7 @@ async function handleAnalyzeCommand(fileUri: vscode.Uri, context: vscode.Extensi
 		// Save analysis cache to persistent storage
 		await saveAnalysisCache(context);
 
-		vscode.window.showInformationMessage(await t('analysisComplete', context));
+		console.log('[Extension] Analysis complete');
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		vscode.window.showErrorMessage(`${await t('analysisFailed', context)}: ${errorMessage}`);
@@ -1148,7 +1170,7 @@ async function getEffectiveLayoutMode(context: vscode.ExtensionContext, storageM
 /**
  * Build a comprehensive diagram from all cached analyses
  */
-function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, visibilityMap?: Map<string, boolean>, layoutMode?: string): any {
+async function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, visibilityMap?: Map<string, boolean>, layoutMode?: string): Promise<any> {
 	const nodes: any[] = [];
 	const edges: any[] = [];
 	const nodeMap = new Map<string, any>();
@@ -1183,13 +1205,41 @@ function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, v
 		return visibilityMap.get(file.path) !== false;
 	});
 
-	// First pass: add all nodes from visible analyses
-	visibleFiles.forEach(file => {
+	// Helper function to check if a file exists in the workspace
+	const fileExistsInWorkspace = async (fileName: string, nodePath?: string): Promise<boolean> => {
+		// If the node has a path and it's in our analyzed files, it exists
+		if (nodePath && analyzedFilePaths.has(nodePath)) {
+			return true;
+		}
+		
+		// Try to find the file in the workspace
+		try {
+			const files = await vscode.workspace.findFiles(`**/${fileName}`, '**/node_modules/**', 1);
+			return files.length > 0;
+		} catch (error) {
+			console.error('[buildComprehensiveDiagram] Error checking file existence:', error);
+			return false;
+		}
+	};
+
+	// First pass: add all nodes from visible analyses (with validation for dependencies)
+	for (const file of visibleFiles) {
 		const analysis = cache.getAnalysis(file.path);
 		if (analysis && analysis.diagram) {
-			analysis.diagram.nodes.forEach((node: any) => {
+			for (const node of analysis.diagram.nodes) {
 				const nodeKey = normalizeNodeId(node.label);
 				console.log('[buildComprehensiveDiagram] Processing node:', node.label, '-> normalized ID:', nodeKey);
+				
+				// For dependency nodes (not current file), validate they exist
+				if (!node.isCurrentFile && !node.isAnalyzed) {
+					const fileName = node.fileName || node.label;
+					const exists = await fileExistsInWorkspace(fileName, node.path);
+					if (!exists) {
+						console.log('[buildComprehensiveDiagram] Skipping non-existent dependency:', fileName);
+						continue; // Skip this node - it doesn't exist in the workspace
+					}
+				}
+				
 				if (!nodeMap.has(nodeKey)) {
 					const newNode = { ...node };
 					// Use normalized ID for consistency
@@ -1198,7 +1248,7 @@ function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, v
 					newNode.isCurrentFile = analysis === currentAnalysis && node.isCurrentFile;
 					// Mark as analyzed if this node's path is in the analyzed files list
 					// or if it was already marked as analyzed in the original node
-					newNode.isAnalyzed = node.isAnalyzed || (node.path && analyzedFilePaths.has(node.path));
+					newNode.isAnalyzed = !!node.isAnalyzed || (!!node.path && analyzedFilePaths.has(node.path));
 					nodeMap.set(nodeKey, newNode);
 					nodes.push(newNode);
 					console.log('[buildComprehensiveDiagram] Node added to map with ID:', nodeKey);
@@ -1211,7 +1261,7 @@ function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, v
 							existingNode.isCurrentFile = true;
 						}
 						// Update isAnalyzed if this node is analyzed
-						if (node.isAnalyzed || (node.path && analyzedFilePaths.has(node.path))) {
+						if (!!node.isAnalyzed || (!!node.path && analyzedFilePaths.has(node.path))) {
 							existingNode.isAnalyzed = true;
 						}
 						// Update path if the new node has a path and existing doesn't
@@ -1224,9 +1274,9 @@ function buildComprehensiveDiagram(cache: AnalysisCache, currentAnalysis: any, v
 						}
 					}
 				}
-			});
+			}
 		}
-	});
+	}
 
 	// Second pass: add edges only between visible nodes
 	const edgeSet = new Set<string>();
@@ -1767,11 +1817,18 @@ async function saveAnalysisCache(context: vscode.ExtensionContext): Promise<void
 		// Get quality findings
 		const qualityFindings = qualityAnalysisManager.getCacheData();
 
+		// Convert fileVisibilityMap to plain object
+		const fileVisibility: Record<string, boolean> = {};
+		fileVisibilityMap.forEach((visible, filePath) => {
+			fileVisibility[filePath] = visible;
+		});
+
 		// Create cache data
 		const cacheData: AnalysisCacheData = {
 			version: CACHE_VERSION,
 			timestamp: Date.now(),
 			analyses: analyses,
+			fileVisibility: fileVisibility,
 			securityFindings: securityFindings,
 			qualityFindings: qualityFindings
 		};
