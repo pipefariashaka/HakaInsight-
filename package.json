@@ -1,8 +1,8 @@
 {
-  "name": "code-architect-hakalab",
+  "name": "haka-insight",
   "displayName": "Haka Insight",
   "description": "AI-powered code architecture analyzer with deep insights and quality metrics",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "publisher": "hakalab",
   "engines": {
     "vscode": "^1.108.1"
@@ -25,14 +25,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/hakalab/haka-insight.git"
+    "url": "https://github.com/pipefariashaka/HakaInsight-.git"
   },
   "bugs": {
-    "url": "https://github.com/hakalab/haka-insight/issues"
+    "url": "https://github.com/pipefariashaka/HakaInsight-/issues"
   },
-  "homepage": "https://github.com/hakalab/haka-insight#readme",
+  "homepage": "https://github.com/pipefariashaka/HakaInsight-#readme",
   "license": "MIT",
-  "icon": "media/icon.svg",
+  "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#0a0e27",
     "theme": "dark"

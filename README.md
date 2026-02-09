@@ -1,296 +1,281 @@
 # Haka Insight
 
-A Visual Studio Code extension that uses Google's Gemini 3 API to analyze source code and generate interactive architecture diagrams with deep insights and quality metrics.
+**AI-Powered Code Architecture Analysis for Visual Studio Code**
 
-## Features
+Transform your codebase into interactive visual diagrams with deep security and quality insights powered by Google's Gemini AI.
 
-- 📊 **Visual Architecture Diagrams** - Interactive diagrams with zoom, pan, and persistent node positions
-- 🔍 **Code Analysis** - Powered by Gemini 3 AI with dual model support (Flash & Pro)
-- 🔐 **Security Analysis** - Dedicated security tab with risk level calculation and AI executive summaries
-- 📈 **Quality Analysis** - Separate quality tab with code quality scoring and categorized issues
-- 💾 **Analysis Cache** - Analyses are cached to save API tokens
-- 🧭 **Code Navigation** - Click to jump directly to code locations from findings
-- 📄 **Report Generation** - Generate professional HTML reports for security and quality
-- 🎨 **Modern UI** - Dark theme with polished tab styling and consistent button design
-- 🚀 **Fast Performance** - Cached analyses load instantly without API calls
-- 🌐 **Bilingual** - Full support for English and Spanish with instant language switching
-- 🔄 **Auto-Loading** - Diagrams load automatically when opening the sidebar
-- ⚡ **Smart Loading States** - Visual feedback during analysis operations
+![Haka Insight Overview](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/hero-screenshot.png)
 
-## Installation
+## ✨ Key Features
 
-1. Install the extension from the VS Code Marketplace
-2. Or clone this repository and run `npm install && npm run package`
+### 📊 Interactive Architecture Diagrams
+Generate beautiful, interactive diagrams of your code architecture with automatic dependency detection and relationship mapping.
 
-## Quick Start
+![Diagram View](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/diagram-tab.png)
 
-### 1. Configure API Key
+- **Zoom & Pan**: Navigate large codebases with smooth zoom and pan controls
+- **Persistent Layouts**: Your custom node arrangements are automatically saved
+- **Click to Navigate**: Jump directly to code by clicking on diagram nodes
+- **Smart Merging**: Incrementally build comprehensive diagrams across multiple analyses
 
-1. Open the extension panel (click the Haka Insight icon in the sidebar)
-2. Go to the "Settings" tab
-3. Enter your Gemini 3 API Key
-4. Select your preferred model (Flash for speed, Pro for detail)
-5. Click "Save"
-6. Optionally click "Test Connection" to verify
+### 🔐 Security Analysis
+Identify security vulnerabilities with AI-powered analysis and risk assessment.
 
-### 2. Analyze Code
+![Security Analysis](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/security-tab.png)
 
-1. Open a code file
-2. Right-click on the file in the explorer
-3. Select "Analyze Architecture"
-4. View the diagram and analysis in the panel
+- **Risk Level Calculation**: Automatic risk scoring (Critical/High/Medium/Low)
+- **Severity Categorization**: Findings organized by severity level
+- **AI Executive Summaries**: Get high-level security overviews
+- **Code Navigation**: Jump directly to vulnerable code locations
+- **Professional Reports**: Generate shareable HTML security reports
 
-### 3. Explore Features
+### 📈 Quality Analysis
+Comprehensive code quality metrics with actionable recommendations.
 
-**Diagram Tab:**
-- **Zoom**: Use mouse wheel to zoom in/out
-- **Pan**: Click and drag to move around
-- **Navigate**: Click on dependencies to open related files
-- **Persist**: Node positions are automatically saved
+![Quality Analysis](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/quality-tab.png)
 
-**Security Tab:**
-- View security findings categorized by severity
-- Check overall risk level calculation
-- Read AI-generated executive summary
-- Generate professional security reports
-- Navigate directly to code locations
+- **Quality Scoring**: 0-100 quality score based on multiple factors
+- **Categorized Issues**: Bugs, improvements, performance, and best practices
+- **Detailed Recommendations**: AI-generated suggestions for each issue
+- **Quality Reports**: Export detailed quality analysis as HTML
+- **Direct Navigation**: Click to view issues in your code
 
-**Quality Tab:**
-- Analyze code quality with scoring
-- Review bugs, improvements, performance issues, and best practices
-- Generate detailed quality reports
-- Jump to specific code issues
+### ⚙️ Flexible Configuration
+Easy setup with powerful customization options.
 
-**Settings Tab:**
-- Configure API key and model
-- Change interface language (English/Spanish)
-- Test API connection
+![Settings](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/settings-tab.png)
 
-## Commands
+- **Dual Model Support**: Choose between Gemini Flash (fast) or Pro (detailed)
+- **Bilingual Interface**: Full English and Spanish support
+- **Secure API Storage**: Your API key is stored securely
+- **Connection Testing**: Verify your API configuration instantly
+
+### 💾 Smart Caching
+Save API tokens and improve performance with intelligent caching.
+
+- **Automatic Caching**: Every analysis is saved locally
+- **Instant Loading**: Cached analyses load without API calls
+- **Token Savings**: Reuse previous analyses to reduce costs
+- **Cache Indicators**: See when data is from cache with timestamps
+- **Easy Updates**: Refresh cached data with one click
+
+## 🚀 Getting Started
+
+### Installation
+
+1. Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hakalab.haka-insight)
+2. Click the Haka Insight icon in the Activity Bar
+3. Configure your Gemini API key in the Settings tab
+
+### Get Your API Key
+
+1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Sign in with your Google account
+3. Create a new API key
+4. Copy and paste it into Haka Insight settings
+
+### Analyze Your Code
+
+![Context Menu](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/context-menu.png)
+
+**Method 1: Context Menu**
+- Right-click any file in the explorer
+- Select "Analyze with Haka Insight"
+
+**Method 2: Editor Menu**
+- Open a file
+- Click the Haka Insight icon in the editor toolbar
+
+**Method 3: Command Palette**
+- Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)
+- Type "Analyze with Haka Insight"
+
+## 📖 How to Use
+
+### Understanding the Diagram
+
+The diagram shows your code architecture with:
+- **Nodes**: Files, classes, functions, and components
+- **Edges**: Dependencies and relationships
+- **Colors**: Different node types (files, classes, functions)
+- **Badges**: File names and metadata
+
+**Interactions:**
+- **Mouse Wheel**: Zoom in/out
+- **Click & Drag**: Pan around the diagram
+- **Click Node**: View details and navigate to code
+- **Drag Node**: Rearrange layout (auto-saved)
+
+### Security Tab
+
+View security findings organized by severity:
+- **Critical**: Immediate attention required
+- **High**: Important security issues
+- **Medium**: Moderate security concerns
+- **Low**: Minor security suggestions
+
+Each finding includes:
+- Description of the vulnerability
+- Location in your code
+- AI-generated recommendations
+- "Go to code" button for quick navigation
+
+**Risk Level**: Overall security assessment based on all findings
+
+### Quality Tab
+
+Code quality analysis with scoring:
+- **Quality Score**: 0-100 rating based on multiple factors
+- **Bugs**: Potential errors and defects
+- **Improvements**: Code optimization opportunities
+- **Performance**: Speed and efficiency issues
+- **Best Practices**: Coding standards and conventions
+
+### Generate Reports
+
+![Report Example](https://raw.githubusercontent.com/pipefariashaka/HakaInsight-/main/media/screenshots/report-example.png)
+
+Create professional HTML reports:
+1. Analyze your code
+2. Go to Security or Quality tab
+3. Click "Generate Report"
+4. Report opens in your browser
+5. Share with your team
+
+Reports include:
+- Executive summary
+- Detailed findings
+- Statistics and charts
+- Recommendations
+- Timestamp and metadata
+
+## 🌐 Language Support
+
+Switch between English and Spanish instantly:
+1. Go to Settings tab
+2. Select your preferred language
+3. Interface updates immediately
+
+**Note**: Existing analyses remain in their original language. Re-analyze files to see them in the new language.
+
+## ⚡ Performance & Caching
+
+### How Caching Works
+
+1. **First Analysis**: Code is sent to Gemini API
+2. **Automatic Save**: Results are cached locally
+3. **Subsequent Views**: Data loads instantly from cache
+4. **Manual Refresh**: Click "Update Analysis" to refresh
+
+### Benefits
+
+- **Faster Loading**: Instant access to previous analyses
+- **Cost Savings**: Reduce API usage and costs
+- **Offline Access**: View cached data without internet
+- **Token Efficiency**: Reuse analyses instead of re-analyzing
+
+### Cache Management
+
+- **View Cache Status**: See "FROM CACHE" badge with timestamp
+- **Clear Cache**: Use "Clear Cache" command to free storage
+- **Update Analysis**: Refresh specific cached analyses
+
+## 🎯 Model Selection
+
+### Gemini Flash (Lite)
+- **Speed**: Fast responses (2-5 seconds)
+- **Cost**: Lower API token usage
+- **Best For**: Quick analyses, frequent use, large codebases
+
+### Gemini Pro
+- **Detail**: More comprehensive analysis
+- **Accuracy**: Better detection of complex issues
+- **Best For**: Critical code, security audits, detailed reviews
+
+## 📋 Commands
+
+Access via Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
 - `Open Haka Insight` - Open the analysis panel
-- `Analyze with Haka Insight` - Analyze the current file (right-click menu)
-- `Clear Haka Insight Diagram` - Clear all stored diagrams and cache
-- `Clear Cache` - Clear cached analyses to free up storage
-- `Load Test Data` - Load sample data for testing (development only)
+- `Analyze with Haka Insight` - Analyze current file
+- `Clear Haka Insight Diagram` - Clear all diagrams and cache
+- `Clear Cache` - Clear cached analyses only
 
-## Requirements
+## 🔧 Requirements
 
-- VS Code 1.80 or higher
-- Google Gemini 3 API Key (get one at [Google AI Studio](https://makersuite.google.com/app/apikey))
+- **VS Code**: Version 1.80 or higher
+- **API Key**: Google Gemini API key ([Get one free](https://makersuite.google.com/app/apikey))
+- **Internet**: Required for API calls (cached data works offline)
 
-## Configuration
+## 🛡️ Privacy & Security
 
-### API Key
+- **API Key Storage**: Stored securely using VS Code's secret storage
+- **Local Caching**: Analyses stored locally on your machine
+- **No Data Collection**: We don't collect or store your code
+- **Direct API Calls**: Your code goes directly to Google's Gemini API
 
-The extension stores your API Key securely using VS Code's secret storage. It is never exposed in plain text.
-
-### Model Selection
-
-Choose between two Gemini models:
-- **Gemini 3 Flash (Lite)**: Faster responses, lower cost, good for quick analyses
-- **Gemini 3 Pro**: More detailed analysis, better for complex code
-
-### Language Support
-
-Switch between English and Spanish in the Settings tab. The interface updates immediately. Note that existing analyses remain in their original language - re-analyze files to see them in the new language.
-
-### Diagram Persistence
-
-Node positions are automatically saved as you arrange them. Your custom layouts persist across VS Code sessions.
-
-### Analysis Cache
-
-Analyses are automatically cached to save API tokens and improve performance:
-
-- **Automatic Caching**: Every analysis is saved to cache
-- **Instant Loading**: Cached analyses load without API calls
-- **Token Savings**: Reusing cached data saves Gemini API tokens
-- **Cache Indicators**: Cached data shows a "FROM CACHE" badge with timestamp
-- **Update Option**: Click "Update Analysis" to refresh cached data
-- **Cache Management**: Use "Clear Cache" command to free up storage
-
-### Report Generation
-
-Generate professional HTML reports:
-- **Security Reports**: Comprehensive security analysis with risk assessment
-- **Quality Reports**: Detailed code quality metrics with scoring
-- Reports include charts, statistics, and actionable recommendations
-- Open directly in your browser for easy sharing
-
-## How It Works
-
-1. **Code Analysis**: When you analyze a file, the extension sends the code to Gemini 3
-2. **Response Parsing**: The API returns a structured analysis with:
-   - Architecture diagram (nodes and edges)
-   - Dependencies
-   - Security warnings
-   - Logic warnings
-   - Best practice recommendations
-   - Code explanation
-3. **Diagram Merging**: New analyses are merged with existing diagrams incrementally
-4. **Cache Storage**: The analysis is saved to cache with timestamp
-5. **Instant Retrieval**: Clicking analyzed nodes shows cached data without API calls
-6. **Persistence**: Both diagrams and analyses persist across VS Code sessions
-
-### Cache Benefits
-
-- **Save API Tokens**: Reuse analyses instead of making new API calls
-- **Faster Performance**: Cached data loads instantly
-- **Offline Access**: View previous analyses without internet connection
-- **Cost Effective**: Reduce API usage and costs
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    VS Code Extension                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │         Extension Host (TypeScript)                  │   │
-│  │  - Extension Activation                             │   │
-│  │  - Sidebar Panel Manager                            │   │
-│  │  - Context Menu Handler                             │   │
-│  │  - Gemini API Client                                │   │
-│  │  - Storage Manager                                  │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                           ↕                                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │         Webview (HTML/CSS/JavaScript)               │   │
-│  │  - Diagram Tab                                      │   │
-│  │  - Settings Tab                                     │   │
-│  │  - Diagram Renderer                                 │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
-                           ↕
-        ┌──────────────────────────────────────┐
-        │      Google Gemini API               │
-        │  - Code Analysis                     │
-        │  - Diagram Generation                │
-        │  - Warning Detection                 │
-        └──────────────────────────────────────┘
-```
-
-## Development
-
-### Setup
-
-```bash
-npm install
-```
-
-### Build
-
-```bash
-npm run compile
-```
-
-### Watch Mode
-
-```bash
-npm run watch
-```
-
-### Test
-
-```bash
-npm run test
-```
-
-### Lint
-
-```bash
-npm run lint
-```
-
-## Testing
-
-The extension includes comprehensive tests:
-
-- **Unit Tests**: 22 tests covering individual components
-- **Property-Based Tests**: 10 tests using fast-check for robustness
-- **Total Coverage**: ~90%
-
-Run tests with:
-
-```bash
-npm run test
-```
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Extension doesn't appear
-
-- Reload VS Code (Ctrl+Shift+P > Reload Window)
-- Check that the extension is enabled
+- Reload VS Code: `Ctrl+Shift+P` → "Reload Window"
+- Check extension is enabled in Extensions panel
 
 ### Analysis fails
-
-- Verify your API Key is valid
-- Check your internet connection
-- See the VS Code output panel for error details
+- Verify API key is correct in Settings
+- Test connection using "Test Connection" button
+- Check internet connection
+- View error details in VS Code Output panel
 
 ### Diagram doesn't render
+- Try zooming with mouse wheel
+- Check browser console (F12) for errors
+- Verify analysis returned valid data
+- Clear cache and re-analyze
 
-- Try zooming (mouse wheel)
-- Check the browser console (F12 in the panel)
-- Verify the analysis returned valid data
+### API errors
+- **401 Unauthorized**: Invalid API key
+- **429 Too Many Requests**: Rate limit exceeded, wait and retry
+- **500 Server Error**: Gemini API issue, try again later
 
-## Contributing
+## 📊 What Gets Analyzed
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Haka Insight analyzes:
+- **Architecture**: File structure, dependencies, relationships
+- **Security**: Vulnerabilities, injection risks, authentication issues
+- **Quality**: Code smells, complexity, maintainability
+- **Performance**: Inefficiencies, bottlenecks, optimization opportunities
+- **Best Practices**: Coding standards, design patterns, conventions
 
-## License
+## 🤝 Contributing
 
-MIT
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Support
+## 📄 License
 
-For issues, questions, or suggestions, please open an issue on GitHub.
+MIT License - see [LICENSE](LICENSE) for details
 
-## Changelog
+## 🔗 Links
 
-### Version 0.0.3 (Latest)
+- [GitHub Repository](https://github.com/pipefariashaka/HakaInsight-)
+- [Report Issues](https://github.com/pipefariashaka/HakaInsight-/issues)
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=hakalab.haka-insight)
+- [Get Gemini API Key](https://makersuite.google.com/app/apikey)
+- [Creator's LinkedIn](https://www.linkedin.com/in/felipefariasalfaro/)
 
-**Major UI Improvements & New Features**
-- ✨ **Separated Security & Quality Tabs**: Dedicated tabs for security and quality analysis
-- 🔐 **Enhanced Security Analysis**: Risk level calculation, severity categorization, AI executive summaries
-- 📈 **Quality Scoring System**: Comprehensive code quality metrics with 0-100 scoring
-- 🧭 **Code Navigation**: Click "Go to code" buttons to jump directly to issues in your files
-- 📄 **Report Generation**: Generate professional HTML reports for security and quality
-- 💾 **Diagram Persistence**: Node positions automatically save and restore
-- 🎨 **Redesigned Settings UI**: Cleaner, more compact layout with better organization
-- 🔘 **Consistent Button Styling**: Unified color scheme matching tab design
-- ⚡ **Smart Loading States**: Visual feedback during analysis operations
-- 🔄 **Auto-Loading Diagrams**: Diagrams load automatically when opening sidebar
-- 🌐 **Improved i18n**: Complete English and Spanish translations for all new features
-- 🎯 **Dual Model Support**: Choose between Gemini Flash (fast) and Pro (detailed)
+## 📝 Changelog
 
-### Version 0.0.2
+See [CHANGELOG.md](CHANGELOG.md) for version history and updates.
 
-**UI Polish & Analysis Persistence**
-- ✨ New polished tab styling with dark blue active tabs
-- 💾 Analysis cache system to save API tokens
-- 🏷️ Cache indicators showing "FROM CACHE" badge and timestamp
-- 🔄 "Update Analysis" button to refresh cached data
-- 🎯 Reorganized button layout in bottom-right corner
-- 🧹 "Clear Cache" command for cache management
-- 🔒 Security findings persistence across sessions
-- 🌐 Enhanced translations for Spanish language
-- ⚡ Improved performance with instant cached data loading
+## ⭐ Support
 
-### Version 0.0.1
-
-- Initial release
-- Code analysis with Gemini 3
-- Interactive architecture diagrams
-- Security, logic, and best practice warnings
-- Persistent diagram storage
-- Secure API Key configuration
+If you find Haka Insight useful, please:
+- ⭐ Star the repository
+- 📝 Leave a review on the marketplace
+- 🐛 Report bugs and suggest features
+- 📢 Share with your team
 
 ---
 
-**Note**: This extension requires a valid Google Gemini 3 API Key. Get one for free at [Google AI Studio](https://makersuite.google.com/app/apikey).
+**Made with ❤️ by [Felipe Farias](https://www.linkedin.com/in/felipefariasalfaro/) | Haka Lab**
 
+*Transform your code understanding with AI-powered insights*

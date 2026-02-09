@@ -2,7 +2,7 @@
 
 All notable changes to the "code-architect-hakalab" extension will be documented in this file.
 
-## [0.0.3] - 2024-01-XX
+## [0.0.1] - 2026-02-08
 
 ### Added
 - **Separated Security & Quality Tabs**: Dedicated tabs for security and quality analysis with independent data
